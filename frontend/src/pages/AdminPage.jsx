@@ -419,10 +419,21 @@ export default function AdminPage() {
         </p>
         <div className="mt-2 grid gap-4 md:grid-cols-2">
           <Field
-            label="ID-ul cursului"
-            hint="Introdu ID-ul numeric al cursului pentru care trimiti credentialele VPS."
+            label="Cursul"
+            hint="Selecteaza cursul pentru care trimiti credentialele VPS."
           >
-            <input className="input" placeholder="Ex: 3" value={vpsForm.courseId} onChange={(e) => setVpsForm({ ...vpsForm, courseId: e.target.value })} />
+            <select
+              className="input"
+              value={vpsForm.courseId}
+              onChange={(e) => setVpsForm({ ...vpsForm, courseId: e.target.value })}
+            >
+              <option value="">Alege un curs</option>
+              {distribution.map((course) => (
+                <option key={course.courseId} value={course.courseId}>
+                  {course.title} (ID: {course.courseId})
+                </option>
+              ))}
+            </select>
           </Field>
           <Field
             label="Adresa IP a serverului VPS"
