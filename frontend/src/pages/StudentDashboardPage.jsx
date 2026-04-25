@@ -27,7 +27,7 @@ function describeResources(course) {
 }
 
 export default function StudentDashboardPage() {
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const [data, setData] = useState({ allCourses: [], enrolledCourses: [] });
   const [selectedCourseId, setSelectedCourseId] = useState(null);
   const [msg, setMsg] = useState('');
@@ -47,6 +47,7 @@ export default function StudentDashboardPage() {
     load();
   }, []);
 
+  const isAdmin = user?.role === 'administrator';
   const selectedCourse = data.allCourses.find((course) => course.id === selectedCourseId) || null;
 
   async function enroll(courseId) {
@@ -64,11 +65,12 @@ export default function StudentDashboardPage() {
 
   return (
     <div className="space-y-6">
-      <h2 className="font-heading text-3xl font-bold">Dashboard Student</h2>
+      <h2 className="font-heading text-3xl font-bold">{isAdmin ? 'Cursuri universitare' : 'Dashboard Student'}</h2>
       {msg && <p className="rounded-lg bg-green-100 p-2 text-green-700">{msg}</p>}
       {err && <p className="rounded-lg bg-red-100 p-2 text-red-700">{err}</p>}
 
-      <section className="card">
+      {!isAdmin && (
+        <section className="card">
         <h3 className="font-heading text-xl font-semibold">Cursurile mele</h3>
         <div className="mt-3 grid gap-3 md:grid-cols-2">
           {data.enrolledCourses.length === 0 && <p className="text-sm">Nu esti inrolat la niciun curs.</p>}
@@ -83,12 +85,15 @@ export default function StudentDashboardPage() {
             </div>
           ))}
         </div>
-      </section>
+        </section>
+      )}
 
       <section className="card">
-        <h3 className="font-heading text-xl font-semibold">Toate cursurile disponibile</h3>
+        <h3 className="font-heading text-xl font-semibold">{isAdmin ? 'Toate cursurile' : 'Toate cursurile disponibile'}</h3>
         <p className="mt-1 text-sm text-ink/75">
-          Inainte sa te inrolezi, poti deschide detaliile unui curs ca sa vezi cine il preda, ce resurse primesti si cate locuri mai sunt disponibile.
+          {isAdmin
+            ? 'Ca administrator poti deschide detaliile fiecarui curs pentru a vedea profesorul, resursele alocate si materialele disponibile.'
+            : 'Inainte sa te inrolezi, poti deschide detaliile unui curs ca sa vezi cine il preda, ce resurse primesti si cate locuri mai sunt disponibile.'}
         </p>
 
         {selectedCourse && (
@@ -107,7 +112,7 @@ export default function StudentDashboardPage() {
                 </div>
               </div>
               <div className="flex flex-wrap gap-2">
-                {!selectedCourse.is_enrolled && (
+                {!isAdmin && !selectedCourse.is_enrolled && (
                   <button
                     className="btn-primary"
                     onClick={() => enroll(selectedCourse.id)}
@@ -116,7 +121,7 @@ export default function StudentDashboardPage() {
                     Inroleaza-ma la acest curs
                   </button>
                 )}
-                {selectedCourse.is_enrolled && (
+                {!isAdmin && selectedCourse.is_enrolled && (
                   <Link className="btn-primary" to={`/student/course/${selectedCourse.id}`}>
                     Deschide cursul
                   </Link>
@@ -233,9 +238,9 @@ export default function StudentDashboardPage() {
                   <button className="btn-outline" onClick={() => setSelectedCourseId(course.id)} type="button">
                     Vezi detalii
                   </button>
-                  {course.is_enrolled ? (
+                  {!isAdmin && course.is_enrolled ? (
                     <span className="rounded-xl bg-moss/10 px-3 py-2 text-sm text-moss">Deja inrolat</span>
-                  ) : (
+                  ) : !isAdmin ? (
                     <button
                       className="btn-primary"
                       onClick={() => enroll(course.id)}
@@ -243,7 +248,7 @@ export default function StudentDashboardPage() {
                     >
                       Inrolare
                     </button>
-                  )}
+                  ) : null}
                 </div>
               </div>
             </div>
@@ -280,9 +285,9 @@ export default function StudentDashboardPage() {
                       <button className="btn-outline" onClick={() => setSelectedCourseId(course.id)} type="button">
                         Vezi detalii
                       </button>
-                      {course.is_enrolled ? (
+                      {!isAdmin && course.is_enrolled ? (
                         <span className="self-center text-moss">Deja inrolat</span>
-                      ) : (
+                      ) : !isAdmin ? (
                         <button
                           className="btn-primary"
                           onClick={() => enroll(course.id)}
@@ -290,7 +295,7 @@ export default function StudentDashboardPage() {
                         >
                           Inrolare
                         </button>
-                      )}
+                      ) : null}
                     </div>
                   </td>
                 </tr>

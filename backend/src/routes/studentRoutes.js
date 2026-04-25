@@ -22,20 +22,20 @@ import {
 
 const router = Router();
 
-router.use(authRequired, requireRole('student'));
+router.use(authRequired);
 
-router.get('/courses', getAllCourses);
-router.post('/courses/:courseId/enroll', enrollValidation, validateRequest, enrollCourse);
-router.get('/courses/:courseId', courseAccessValidation, validateRequest, getCourseDetails);
+router.get('/courses', requireRole('student', 'administrator'), getAllCourses);
+router.post('/courses/:courseId/enroll', requireRole('student'), enrollValidation, validateRequest, enrollCourse);
+router.get('/courses/:courseId', requireRole('student', 'administrator'), courseAccessValidation, validateRequest, getCourseDetails);
 
-router.post('/courses/:courseId/assignments', uploadAssignment, uploadAssignmentValidation, validateRequest, addAssignment);
+router.post('/courses/:courseId/assignments', requireRole('student'), uploadAssignment, uploadAssignmentValidation, validateRequest, addAssignment);
 
-router.get('/activities', listActivities);
-router.post('/courses/:courseId/consume', consumeTokensValidation, validateRequest, consumeTokens);
+router.get('/activities', requireRole('student'), listActivities);
+router.post('/courses/:courseId/consume', requireRole('student'), consumeTokensValidation, validateRequest, consumeTokens);
 
-router.post('/courses/:courseId/vps/validate', validateVpsValidation, validateRequest, validateVps);
+router.post('/courses/:courseId/vps/validate', requireRole('student'), validateVpsValidation, validateRequest, validateVps);
 
-router.post('/courses/:courseId/extra-resources', requestExtraValidation, validateRequest, requestExtraResources);
-router.get('/extra-requests', myExtraRequests);
+router.post('/courses/:courseId/extra-resources', requireRole('student'), requestExtraValidation, validateRequest, requestExtraResources);
+router.get('/extra-requests', requireRole('student'), myExtraRequests);
 
 export default router;

@@ -2,10 +2,12 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { api } from '../lib/api';
 import { useAuth } from '../lib/auth';
+import { useToast } from '../lib/toast';
 
 export default function StudentCoursePage() {
   const { courseId } = useParams();
-  const { token } = useAuth();
+  const { token, user } = useAuth();
+  const { showToast } = useToast();
 
   const [courseData, setCourseData] = useState(null);
   const [activities, setActivities] = useState([]);
@@ -18,17 +20,19 @@ export default function StudentCoursePage() {
   const [apiResponse, setApiResponse] = useState(null);
   const [submittingExtra, setSubmittingExtra] = useState(false);
   const [submittingConsumption, setSubmittingConsumption] = useState(false);
+  const isAdmin = user?.role === 'administrator';
 
   async function load() {
     try {
-      const [courseResp, actResp, requestsResp] = await Promise.all([
-        api(`/student/courses/${courseId}`, { token }),
-        api('/student/activities', { token }),
-        api('/student/extra-requests', { token })
-      ]);
+      const requests = [api(`/student/courses/${courseId}`, { token })];
+      if (!isAdmin) {
+        requests.push(api('/student/activities', { token }), api('/student/extra-requests', { token }));
+      }
+
+      const [courseResp, actResp, requestsResp] = await Promise.all(requests);
       setCourseData(courseResp);
-      setActivities(actResp.activities);
-      setExtraRequests(requestsResp.requests.filter((request) => String(request.course_id) === String(courseId)));
+      setActivities(actResp?.activities || []);
+      setExtraRequests((requestsResp?.requests || []).filter((request) => String(request.course_id) === String(courseId)));
     } catch (e) {
       setErr(e.message);
     }
@@ -36,7 +40,7 @@ export default function StudentCoursePage() {
 
   useEffect(() => {
     load();
-  }, [courseId]);
+  }, [courseId, isAdmin]);
 
   const pendingRequestForType = extraRequests.find(
     (request) =>
@@ -68,6 +72,11 @@ export default function StudentCoursePage() {
     setMsg('');
     if (!consumeItems.length) {
       setErr('Completeaza cel putin o activitate cu un numar de repetari mai mare decat 0.');
+      showToast({
+        title: 'Consum incomplet',
+        message: 'Adauga cel putin o activitate cu un numar de repetari mai mare decat 0.',
+        type: 'error'
+      });
       return;
     }
     setSubmittingConsumption(true);
@@ -78,10 +87,19 @@ export default function StudentCoursePage() {
         body: { items: consumeItems }
       });
       setMsg(`${resp.message} Total: ${resp.totalTokens}`);
+      showToast({
+        title: 'Consum inregistrat',
+        message: `Au fost inregistrate ${resp.totalTokens} token-uri pentru acest curs.`
+      });
       setConsumeValues({});
       await load();
     } catch (e) {
       setErr(e.message);
+      showToast({
+        title: 'Consum esuat',
+        message: e.message,
+        type: 'error'
+      });
     } finally {
       setSubmittingConsumption(false);
     }
@@ -152,6 +170,11 @@ export default function StudentCoursePage() {
     <div className="space-y-6">
       <h2 className="font-heading text-3xl font-bold">{courseData.course.title}</h2>
       <p>{courseData.course.description}</p>
+      {isAdmin && (
+        <p className="rounded-lg bg-canvas/70 p-3 text-sm text-ink/80">
+          Vizualizare administrator: poti inspecta cursul si materialele lui, fara actiunile rezervate studentilor.
+        </p>
+      )}
       {msg && <p className="rounded-lg bg-green-100 p-2 text-green-700">{msg}</p>}
       {err && <p className="rounded-lg bg-red-100 p-2 text-red-700">{err}</p>}
 
@@ -168,12 +191,16 @@ export default function StudentCoursePage() {
         </div>
         <div>
           <h3 className="font-heading text-lg font-semibold">Validare VPS</h3>
-          <div className="mt-2 space-y-2">
-            <input className="input" placeholder="IP" value={vps.ip} onChange={(e) => setVps({ ...vps, ip: e.target.value })} />
-            <input className="input" placeholder="Username" value={vps.username} onChange={(e) => setVps({ ...vps, username: e.target.value })} />
-            <input className="input" placeholder="Password" value={vps.password} onChange={(e) => setVps({ ...vps, password: e.target.value })} />
-            <button className="btn-primary w-full sm:w-auto" onClick={validateVps}>Valideaza prin httpbin</button>
-          </div>
+          {isAdmin ? (
+            <p className="mt-2 text-sm text-ink/70">Administratorul poate vedea starea resurselor, dar nu valideaza VPS in numele studentului.</p>
+          ) : (
+            <div className="mt-2 space-y-2">
+              <input className="input" placeholder="IP" value={vps.ip} onChange={(e) => setVps({ ...vps, ip: e.target.value })} />
+              <input className="input" placeholder="Username" value={vps.username} onChange={(e) => setVps({ ...vps, username: e.target.value })} />
+              <input className="input" placeholder="Password" value={vps.password} onChange={(e) => setVps({ ...vps, password: e.target.value })} />
+              <button className="btn-primary w-full sm:w-auto" onClick={validateVps}>Valideaza prin httpbin</button>
+            </div>
+          )}
         </div>
       </section>
 
@@ -190,7 +217,8 @@ export default function StudentCoursePage() {
         </ul>
       </section>
 
-      <section className="card">
+      {!isAdmin && (
+        <section className="card">
         <h3 className="font-heading text-lg font-semibold">Incarcare teme</h3>
         <input className="mt-2" type="file" onChange={uploadAssignment} />
         <ul className="mt-3 list-disc pl-6">
@@ -198,9 +226,11 @@ export default function StudentCoursePage() {
             <li key={a.id}>{a.file_name}</li>
           ))}
         </ul>
-      </section>
+        </section>
+      )}
 
-      <section className="card">
+      {!isAdmin && (
+        <section className="card">
         <h3 className="font-heading text-lg font-semibold">Consum manual token-uri</h3>
         <div className="mt-2 space-y-2">
           {activities.map((activity) => (
@@ -225,9 +255,11 @@ export default function StudentCoursePage() {
             </p>
           )}
         </div>
-      </section>
+        </section>
+      )}
 
-      <section className="card">
+      {!isAdmin && (
+        <section className="card">
         <h3 className="font-heading text-lg font-semibold">Solicitare resurse suplimentare</h3>
         <p className="mt-1 text-sm text-ink/75">
           Trimite o singura cerere per tip de resursa cat timp solicitarea este in analiza. Vei vedea mai jos statusul exact al cererilor tale.
@@ -284,7 +316,8 @@ export default function StudentCoursePage() {
             </div>
           ))}
         </div>
-      </section>
+        </section>
+      )}
 
       {apiResponse && (
         <section className="card overflow-auto">

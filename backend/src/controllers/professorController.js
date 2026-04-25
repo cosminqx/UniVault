@@ -46,10 +46,22 @@ export async function listProfessorCourses(req, res) {
     `SELECT c.*, COUNT(e.id)::int AS enrolled_students,
             COALESCE(ca.allocated_tokens, 0) AS allocated_tokens,
             COALESCE(ca.allocated_vps, 0) AS allocated_vps,
-            COALESCE(ca.distribution_confirmed, FALSE) AS distribution_confirmed
+            COALESCE(ca.distribution_confirmed, FALSE) AS distribution_confirmed,
+            COALESCE(
+              json_agg(
+                DISTINCT jsonb_build_object(
+                  'id', cm.id,
+                  'file_name', cm.file_name,
+                  'file_path', cm.file_path,
+                  'uploaded_at', cm.uploaded_at
+                )
+              ) FILTER (WHERE cm.id IS NOT NULL),
+              '[]'::json
+            ) AS materials
      FROM courses c
      LEFT JOIN enrollments e ON e.course_id = c.id
      LEFT JOIN course_allocations ca ON ca.course_id = c.id
+     LEFT JOIN course_materials cm ON cm.course_id = c.id
      WHERE c.professor_id = $1
      GROUP BY c.id, ca.id
      ORDER BY c.created_at DESC`,

@@ -87,7 +87,11 @@ async function ensureStudentEnrolled(courseId, studentId) {
 
 export async function getCourseDetails(req, res) {
   const courseId = Number(req.params.courseId);
-  await ensureStudentEnrolled(courseId, req.user.id);
+  const isAdmin = req.user.role === 'administrator';
+
+  if (!isAdmin) {
+    await ensureStudentEnrolled(courseId, req.user.id);
+  }
 
   const { rows: courseRows } = await query(
     `SELECT c.*, u.name AS professor_name, u.email AS professor_email
@@ -107,12 +111,21 @@ export async function getCourseDetails(req, res) {
     [courseId, req.user.id]
   );
 
-  const balance = await getStudentCourseBalance(courseId, req.user.id);
+  const balance = isAdmin
+    ? {
+        allocatedTokens: Number(courseRows[0]?.tokens_per_student || 0),
+        usedTokens: 0,
+        remainingTokens: Number(courseRows[0]?.tokens_per_student || 0),
+        allocatedVps: Number(courseRows[0]?.vps_per_student || 0),
+        usedVps: 0,
+        remainingVps: Number(courseRows[0]?.vps_per_student || 0)
+      }
+    : await getStudentCourseBalance(courseId, req.user.id);
 
   return res.json({
     course: courseRows[0],
     materials,
-    assignments,
+    assignments: isAdmin ? [] : assignments,
     resources: balance
   });
 }

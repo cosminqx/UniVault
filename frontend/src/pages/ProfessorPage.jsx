@@ -387,6 +387,34 @@ export default function ProfessorPage() {
               <p className="mt-2 text-xs text-ink/65">
                 Foloseste primul buton pentru fisiere precum PDF, suport de curs, laborator sau cerinte. Foloseste al doilea buton cand resursele initiale ale cursului nu mai sunt suficiente.
               </p>
+
+              <div className="mt-4 rounded-xl border border-moss/15 bg-white/70 p-3">
+                <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                  <h5 className="font-semibold">Materiale adaugate pentru studenti</h5>
+                  <span className="text-xs text-ink/60">
+                    {(course.materials || []).length} fisiere incarcate
+                  </span>
+                </div>
+
+                {(!course.materials || course.materials.length === 0) && (
+                  <p className="mt-2 text-sm text-ink/70">
+                    Inca nu ai incarcat materiale pentru acest curs.
+                  </p>
+                )}
+
+                {course.materials?.length > 0 && (
+                  <div className="mt-3 space-y-2">
+                    {course.materials.map((material) => (
+                      <div key={material.id} className="rounded-xl border border-moss/10 bg-canvas/60 p-3 text-sm">
+                        <p className="font-medium break-all">{material.file_name}</p>
+                        <p className="mt-1 text-xs text-ink/65">
+                          Adaugat la {new Date(material.uploaded_at).toLocaleString()}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           ))}
           {courses.length === 0 && (

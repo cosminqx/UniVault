@@ -2,17 +2,6 @@ import { useEffect, useMemo, useState } from 'react';
 import { api } from '../lib/api';
 import { useAuth } from '../lib/auth';
 
-const realisticActivityPresets = [
-  { name: 'Generare rezumat articol stiintific', tokenCost: 120 },
-  { name: 'Explicare concept dificil pentru seminar', tokenCost: 90 },
-  { name: 'Generare quiz de verificare', tokenCost: 140 },
-  { name: 'Feedback automat pentru tema', tokenCost: 220 },
-  { name: 'Asistenta pentru laborator de programare', tokenCost: 350 },
-  { name: 'Analiza set de date pentru proiect', tokenCost: 280 },
-  { name: 'Traducere material academic', tokenCost: 75 },
-  { name: 'Generare draft raport de cercetare', tokenCost: 260 }
-];
-
 function Field({ label, hint, children }) {
   return (
     <label className="block space-y-1">
@@ -33,6 +22,7 @@ export default function AdminPage() {
   const [adminRequests, setAdminRequests] = useState([]);
   const [newActivity, setNewActivity] = useState({ name: '', tokenCost: '' });
   const [vpsForm, setVpsForm] = useState({ courseId: '', ipAddress: '', username: '', password: '' });
+  const [selectedUserActions, setSelectedUserActions] = useState({});
   const [msg, setMsg] = useState('');
   const [err, setErr] = useState('');
 
@@ -85,6 +75,22 @@ export default function AdminPage() {
     }
   }
 
+  async function applyUserAction(userId) {
+    const action = selectedUserActions[userId];
+
+    if (!action) return;
+
+    if (action.startsWith('role:')) {
+      await setRole(userId, action.replace('role:', ''));
+    } else if (action === 'revoke') {
+      await revokeRole(userId, false);
+    } else if (action === 'revoke_deactivate') {
+      await revokeRole(userId, true);
+    }
+
+    setSelectedUserActions((prev) => ({ ...prev, [userId]: '' }));
+  }
+
   async function createActivity() {
     try {
       const resp = await api('/admin/activities', {
@@ -101,32 +107,6 @@ export default function AdminPage() {
     } catch (e) {
       setErr(e.message);
     }
-  }
-
-  async function addPresetActivities() {
-    setErr('');
-    setMsg('');
-
-    let created = 0;
-
-    for (const preset of realisticActivityPresets) {
-      try {
-        await api('/admin/activities', { method: 'POST', token, body: preset });
-        created += 1;
-      } catch (e) {
-        if (e.status !== 400 && e.status !== 409) {
-          setErr(e.message);
-          return;
-        }
-      }
-    }
-
-    setMsg(
-      created > 0
-        ? `Au fost adaugate ${created} activitati demo mai realiste pentru platforma.`
-        : 'Activitatile demo recomandate exista deja sau nu au putut fi adaugate din cauza duplicatelor.'
-    );
-    await load();
   }
 
   async function updateActivity(id, tokenCost) {
@@ -258,14 +238,29 @@ export default function AdminPage() {
                 <td className="p-2">{u.role}</td>
                 <td className="p-2">{u.is_active ? 'Activ' : 'Dezactivat'}</td>
                 <td className="p-2">
-                  <div className="flex flex-wrap gap-2">
-                    {roles.map((role) => (
-                      <button key={role} className="btn-outline text-xs" onClick={() => setRole(u.id, role)}>
-                        {role}
-                      </button>
-                    ))}
-                    <button className="btn-secondary text-xs" onClick={() => revokeRole(u.id, false)}>Revoca la student</button>
-                    <button className="btn-secondary text-xs" onClick={() => revokeRole(u.id, true)}>Revoca + dezactiveaza</button>
+                  <div className="flex min-w-[250px] flex-col gap-2 sm:min-w-[320px] sm:flex-row">
+                    <select
+                      className="input text-xs"
+                      value={selectedUserActions[u.id] ?? ''}
+                      onChange={(e) => setSelectedUserActions((prev) => ({ ...prev, [u.id]: e.target.value }))}
+                    >
+                      <option value="">Alege o actiune</option>
+                      {roles.map((role) => (
+                        <option key={role} value={`role:${role}`}>
+                          Seteaza rol: {role}
+                        </option>
+                      ))}
+                      <option value="revoke">Revoca la student</option>
+                      <option value="revoke_deactivate">Revoca + dezactiveaza</option>
+                    </select>
+                    <button
+                      className="btn-outline text-xs"
+                      disabled={!selectedUserActions[u.id]}
+                      onClick={() => applyUserAction(u.id)}
+                      type="button"
+                    >
+                      Executa
+                    </button>
                   </div>
                 </td>
               </tr>
@@ -279,28 +274,6 @@ export default function AdminPage() {
         <p className="mt-1 text-sm text-ink/75">
           O activitate reprezinta o actiune pe care studentul o poate consuma manual in platforma. Pentru fiecare activitate definesti un nume clar si costul ei in token-uri.
         </p>
-
-        <div className="mt-3 rounded-xl border border-moss/20 bg-canvas/60 p-3">
-          <p className="text-sm font-semibold">Exemple mai realiste pentru demo</p>
-          <p className="mt-1 text-xs text-ink/70">
-            Poti folosi exemplele de mai jos pentru o prezentare mai credibila a platformei in context universitar.
-          </p>
-          <div className="mt-3 flex flex-wrap gap-2">
-            {realisticActivityPresets.map((preset) => (
-              <button
-                key={preset.name}
-                className="btn-outline text-xs"
-                onClick={() => setNewActivity(preset)}
-                type="button"
-              >
-                {preset.name} ({preset.tokenCost})
-              </button>
-            ))}
-          </div>
-          <button className="btn-secondary mt-3" onClick={addPresetActivities} type="button">
-            Adauga toate activitatile demo recomandate
-          </button>
-        </div>
 
         <div className="mt-4 grid gap-4 md:grid-cols-[2fr_1fr_auto]">
           <Field

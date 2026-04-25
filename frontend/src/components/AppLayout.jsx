@@ -4,6 +4,7 @@ import { useAuth } from '../lib/auth';
 const menuByRole = {
   administrator: [
     { to: '/admin', label: 'Admin' },
+    { to: '/student', label: 'Cursuri' },
     { to: '/stats', label: 'Statistici' }
   ],
   profesor: [{ to: '/professor', label: 'Profesor' }],
