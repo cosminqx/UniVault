@@ -1,5 +1,6 @@
 import { Link, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../lib/auth';
+import logoUrl from '../../../univault-logo.svg';
 
 const menuByRole = {
   administrator: [
@@ -25,7 +26,7 @@ export default function AppLayout() {
     <div className="min-h-screen">
       <header className="sticky top-0 z-20 border-b border-moss/20 bg-canvas/95 backdrop-blur">
         <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-3 md:flex-row md:items-center md:justify-between">
-          <h1 className="font-heading text-xl font-bold">UniVault</h1>
+          <img alt="UniVault" className="h-10 w-auto md:h-12" src={logoUrl} />
           <nav className="flex w-full flex-wrap items-center gap-2 md:w-auto md:justify-end md:gap-3">
             {(menuByRole[user.role] || []).map((item) => (
               <Link key={item.to} className="btn-outline text-sm" to={item.to}>
