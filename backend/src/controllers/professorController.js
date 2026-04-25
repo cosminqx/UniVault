@@ -255,3 +255,101 @@ export async function getStudentAssignments(req, res) {
 
   return res.json({ assignments: rows });
 }
+
+export const deleteAssignmentValidation = [
+  param('courseId').isInt({ min: 1 }),
+  param('assignmentId').isInt({ min: 1 })
+];
+
+export async function deleteAssignment(req, res) {
+  const courseId = Number(req.params.courseId);
+  const assignmentId = Number(req.params.assignmentId);
+
+  const { rows: courseRows } = await query('SELECT id FROM courses WHERE id = $1 AND professor_id = $2', [courseId, req.user.id]);
+  if (!courseRows.length) {
+    return res.status(404).json({ message: 'Course not found or unauthorized.' });
+  }
+
+  const { rows: assignmentRows } = await query(
+    'SELECT id, file_path FROM assignments WHERE id = $1 AND course_id = $2',
+    [assignmentId, courseId]
+  );
+
+  if (!assignmentRows.length) {
+    return res.status(404).json({ message: 'Assignment not found.' });
+  }
+
+  const assignment = assignmentRows[0];
+
+  await query('DELETE FROM assignments WHERE id = $1', [assignmentId]);
+
+  // Delete file from filesystem
+  try {
+    const fs = await import('fs');
+    const path = await import('path');
+    const { fileURLToPath } = await import('url');
+    const __filename = fileURLToPath(import.meta.url);
+    const __dirname = path.dirname(__filename);
+    const fullPath = path.resolve(__dirname, `../uploads/${assignment.file_path}`);
+    if (fs.existsSync(fullPath)) {
+      fs.unlinkSync(fullPath);
+    }
+  } catch (e) {
+    console.error('Error deleting file:', e);
+  }
+
+  await logAction({
+    user: req.user,
+    actionType: 'assignment_deleted_professor',
+    actionDetails: `Professor deleted assignment ${assignmentId} from course ${courseId}`,
+    ipAddress: req.ip
+  });
+
+  return res.json({ message: 'Assignment deleted.' });
+}
+
+export const downloadAssignmentValidation = [
+  param('courseId').isInt({ min: 1 }),
+  param('assignmentId').isInt({ min: 1 })
+];
+
+export async function downloadAssignment(req, res) {
+  const courseId = Number(req.params.courseId);
+  const assignmentId = Number(req.params.assignmentId);
+
+  const { rows: courseRows } = await query('SELECT id FROM courses WHERE id = $1 AND professor_id = $2', [courseId, req.user.id]);
+  if (!courseRows.length) {
+    return res.status(404).json({ message: 'Course not found or unauthorized.' });
+  }
+
+  const { rows: assignmentRows } = await query(
+    'SELECT id, file_name, file_path FROM assignments WHERE id = $1 AND course_id = $2',
+    [assignmentId, courseId]
+  );
+
+  if (!assignmentRows.length) {
+    return res.status(404).json({ message: 'Assignment not found.' });
+  }
+
+  const assignment = assignmentRows[0];
+
+  try {
+    const path = await import('path');
+    const { fileURLToPath } = await import('url');
+    const __filename = fileURLToPath(import.meta.url);
+    const __dirname = path.dirname(__filename);
+    const fullPath = path.resolve(__dirname, `../uploads/${assignment.file_path}`);
+
+    await logAction({
+      user: req.user,
+      actionType: 'assignment_downloaded',
+      actionDetails: `Professor downloaded assignment ${assignmentId} from course ${courseId}`,
+      ipAddress: req.ip
+    });
+
+    return res.download(fullPath, assignment.file_name);
+  } catch (e) {
+    console.error('Error downloading file:', e);
+    return res.status(500).json({ message: 'Error downloading file.' });
+  }
+}

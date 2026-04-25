@@ -5,6 +5,10 @@ import {
   addMaterial,
   createCourse,
   createCourseValidation,
+  deleteAssignment,
+  deleteAssignmentValidation,
+  downloadAssignment,
+  downloadAssignmentValidation,
   getStudentAssignments,
   getStudentAssignmentsValidation,
   listProfessorCourses,
@@ -25,6 +29,8 @@ router.post('/courses', createCourseValidation, validateRequest, createCourse);
 router.get('/courses', listProfessorCourses);
 router.post('/courses/:courseId/materials', uploadMaterial, uploadMaterialValidation, validateRequest, addMaterial);
 router.get('/courses/:courseId/student-assignments', getStudentAssignmentsValidation, validateRequest, getStudentAssignments);
+router.get('/courses/:courseId/assignments/:assignmentId/download', downloadAssignmentValidation, validateRequest, downloadAssignment);
+router.delete('/courses/:courseId/assignments/:assignmentId', deleteAssignmentValidation, validateRequest, deleteAssignment);
 
 router.post('/courses/:courseId/supplement-request', requestSupplementValidation, validateRequest, requestProfessorSupplement);
 

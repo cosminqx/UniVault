@@ -137,6 +137,23 @@ export default function StudentCoursePage() {
     }
   }
 
+  async function deleteAssignment(assignmentId) {
+    if (!confirmAction('Esti sigur ca vrei sa stergi aceasta tema?')) {
+      return;
+    }
+
+    try {
+      const resp = await api(`/student/courses/${courseId}/assignments/${assignmentId}`, {
+        method: 'DELETE',
+        token
+      });
+      setMsg(resp.message);
+      await load();
+    } catch (e2) {
+      setErr(e2.message);
+    }
+  }
+
   async function validateVps() {
     if (!confirmAction('Pornesti validarea VPS prin httpbin?')) {
       return;
@@ -247,15 +264,21 @@ export default function StudentCoursePage() {
         <section className="card">
         <h3 className="font-heading text-lg font-semibold">Incarcare teme</h3>
         <input className="mt-2" type="file" onChange={uploadAssignment} />
-        <ul className="mt-3 list-disc pl-6">
+        <div className="mt-3 space-y-2">
           {courseData.assignments.map((a) => (
-            <li key={a.id}>
+            <div key={a.id} className="flex items-center justify-between rounded-lg border border-moss/20 p-2">
               <a className="text-moss underline" href={getUploadUrl(a.file_path)} target="_blank" rel="noreferrer">
                 {a.file_name}
               </a>
-            </li>
+              <button
+                className="btn-secondary text-xs text-red-600 hover:bg-red-100"
+                onClick={() => deleteAssignment(a.id)}
+              >
+                Sterge
+              </button>
+            </div>
           ))}
-        </ul>
+        </div>
         </section>
       )}
 

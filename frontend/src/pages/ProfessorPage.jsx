@@ -264,6 +264,78 @@ export default function ProfessorPage() {
     }
   }
 
+  async function deleteAssignment(courseId, assignmentId) {
+    setMsg('');
+    setErr('');
+
+    if (!confirmAction('Esti sigur ca vrei sa stergi aceasta tema?')) {
+      return;
+    }
+
+    setBusyAction(`delete-${assignmentId}`);
+    try {
+      const resp = await api(`/professor/courses/${courseId}/assignments/${assignmentId}`, {
+        method: 'DELETE',
+        token
+      });
+      setMsg('Tema a fost stearsa cu succes.');
+      showToast({
+        title: 'Tema stearsa',
+        message: 'Fisierul temei a fost sters din sistem.'
+      });
+      await load();
+    } catch (e) {
+      setErr(e.message);
+      showToast({
+        title: 'Nu am putut sterge tema',
+        message: e.message,
+        type: 'error'
+      });
+    } finally {
+      setBusyAction('');
+    }
+  }
+
+  async function downloadAssignment(courseId, assignmentId, fileName) {
+    setBusyAction(`download-${assignmentId}`);
+    try {
+      const response = await fetch(`/api/professor/courses/${courseId}/assignments/${assignmentId}/download`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Nu am putut descarca fisierul');
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      showToast({
+        title: 'Fisierul descarcat',
+        message: 'Tema a fost descarcata cu succes.'
+      });
+    } catch (e) {
+      setErr(e.message);
+      showToast({
+        title: 'Nu am putut descarca fisierul',
+        message: e.message,
+        type: 'error'
+      });
+    } finally {
+      setBusyAction('');
+    }
+  }
+
   return (
     <div className="space-y-6">
       <h2 className="font-heading text-3xl font-bold">Panou Profesor</h2>
@@ -475,6 +547,22 @@ export default function ProfessorPage() {
                         <p className="mt-1 text-xs text-ink/65">
                           {new Date(assignment.uploaded_at).toLocaleString()}
                         </p>
+                        <div className="mt-2 flex gap-2">
+                          <button
+                            className="btn-secondary text-xs"
+                            onClick={() => downloadAssignment(course.id, assignment.id, assignment.file_name)}
+                            disabled={busyAction === `download-${assignment.id}`}
+                          >
+                            {busyAction === `download-${assignment.id}` ? 'Se descarca...' : 'Descarca'}
+                          </button>
+                          <button
+                            className="btn-secondary text-xs text-red-600 hover:bg-red-100"
+                            onClick={() => deleteAssignment(course.id, assignment.id)}
+                            disabled={busyAction === `delete-${assignment.id}`}
+                          >
+                            {busyAction === `delete-${assignment.id}` ? 'Se sterge...' : 'Sterge'}
+                          </button>
+                        </div>
                       </div>
                     ))}
                   </div>
