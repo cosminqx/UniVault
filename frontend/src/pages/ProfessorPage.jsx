@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { api } from '../lib/api';
 import { useAuth } from '../lib/auth';
 import { useToast } from '../lib/toast';
@@ -362,6 +363,9 @@ export default function ProfessorPage() {
               <p className="text-sm">Status distributie resurse de la administrator: {course.distribution_confirmed ? 'Confirmata' : 'Neconfirmata'}</p>
 
               <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+                <Link className="btn-outline text-center" to={`/professor/course/${course.id}`}>
+                  Deschide cursul in detaliu
+                </Link>
                 <label className="btn-outline cursor-pointer text-center">
                   {busyAction === `upload-${course.id}` ? 'Se incarca materialul...' : 'Incarca material pentru studenti'}
                   <input

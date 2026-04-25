@@ -5,8 +5,12 @@ import {
   addMaterial,
   createCourse,
   createCourseValidation,
+  deleteMaterial,
+  deleteMaterialValidation,
+  getProfessorCourseDetails,
   listProfessorCourses,
   listStudentRequestsForProfessor,
+  professorCourseAccessValidation,
   requestProfessorSupplement,
   requestSupplementValidation,
   resolveStudentRequest,
@@ -21,7 +25,9 @@ router.use(authRequired, requireRole('profesor'));
 
 router.post('/courses', createCourseValidation, validateRequest, createCourse);
 router.get('/courses', listProfessorCourses);
+router.get('/courses/:courseId', professorCourseAccessValidation, validateRequest, getProfessorCourseDetails);
 router.post('/courses/:courseId/materials', uploadMaterial, uploadMaterialValidation, validateRequest, addMaterial);
+router.delete('/courses/:courseId/materials/:materialId', deleteMaterialValidation, validateRequest, deleteMaterial);
 
 router.post('/courses/:courseId/supplement-request', requestSupplementValidation, validateRequest, requestProfessorSupplement);
 

@@ -1,8 +1,14 @@
 import { body, param } from 'express-validator';
+import fs from 'fs/promises';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { query } from '../config/db.js';
 import { logAction } from '../utils/audit.js';
 import { materialUpload } from '../utils/upload.js';
 import { addResourceToStudent, getProfessorApprovedExtraUsed, getProfessorExtraBudget } from '../services/resourceService.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 export const uploadMaterial = materialUpload.single('file');
 
@@ -71,6 +77,66 @@ export async function listProfessorCourses(req, res) {
   return res.json({ courses: rows });
 }
 
+export const professorCourseAccessValidation = [param('courseId').isInt({ min: 1 })];
+
+export async function getProfessorCourseDetails(req, res) {
+  const courseId = Number(req.params.courseId);
+
+  const { rows: courseRows } = await query(
+    `SELECT c.*, COUNT(DISTINCT e.id)::int AS enrolled_students,
+            COALESCE(ca.allocated_tokens, 0) AS allocated_tokens,
+            COALESCE(ca.allocated_vps, 0) AS allocated_vps,
+            COALESCE(ca.professor_extra_tokens, 0) AS professor_extra_tokens,
+            COALESCE(ca.professor_extra_vps, 0) AS professor_extra_vps,
+            COALESCE(ca.distribution_confirmed, FALSE) AS distribution_confirmed
+     FROM courses c
+     LEFT JOIN enrollments e ON e.course_id = c.id
+     LEFT JOIN course_allocations ca ON ca.course_id = c.id
+     WHERE c.id = $1 AND c.professor_id = $2
+     GROUP BY c.id, ca.id`,
+    [courseId, req.user.id]
+  );
+
+  if (!courseRows.length) {
+    return res.status(404).json({ message: 'Course not found or unauthorized.' });
+  }
+
+  const { rows: materials } = await query(
+    `SELECT id, file_name, file_path, mime_type, size_bytes, uploaded_at
+     FROM course_materials
+     WHERE course_id = $1 AND professor_id = $2
+     ORDER BY uploaded_at DESC`,
+    [courseId, req.user.id]
+  );
+
+  const { rows: assignments } = await query(
+    `SELECT a.id, a.file_name, a.file_path, a.mime_type, a.size_bytes, a.uploaded_at, u.name AS student_name, u.email AS student_email
+     FROM assignments a
+     JOIN users u ON u.id = a.student_id
+     JOIN courses c ON c.id = a.course_id
+     WHERE a.course_id = $1 AND c.professor_id = $2
+     ORDER BY a.uploaded_at DESC`,
+    [courseId, req.user.id]
+  );
+
+  const { rows: students } = await query(
+    `SELECT u.id, u.name, u.email, e.enrolled_at
+     FROM enrollments e
+     JOIN users u ON u.id = e.student_id
+     JOIN courses c ON c.id = e.course_id
+     WHERE e.course_id = $1 AND c.professor_id = $2
+     ORDER BY e.enrolled_at DESC`,
+    [courseId, req.user.id]
+  );
+
+  return res.json({
+    course: courseRows[0],
+    materials,
+    assignments,
+    students
+  });
+}
+
 export const uploadMaterialValidation = [param('courseId').isInt({ min: 1 })];
 
 export async function addMaterial(req, res) {
@@ -105,6 +171,39 @@ export async function addMaterial(req, res) {
   });
 
   return res.status(201).json({ message: 'Material uploaded.', material: rows[0] });
+}
+
+export const deleteMaterialValidation = [
+  param('courseId').isInt({ min: 1 }),
+  param('materialId').isInt({ min: 1 })
+];
+
+export async function deleteMaterial(req, res) {
+  const courseId = Number(req.params.courseId);
+  const materialId = Number(req.params.materialId);
+
+  const { rows } = await query(
+    `DELETE FROM course_materials
+     WHERE id = $1 AND course_id = $2 AND professor_id = $3
+     RETURNING id, file_name, file_path`,
+    [materialId, courseId, req.user.id]
+  );
+
+  if (!rows.length) {
+    return res.status(404).json({ message: 'Material not found or unauthorized.' });
+  }
+
+  const absolutePath = path.resolve(__dirname, '../uploads', rows[0].file_path);
+  await fs.unlink(absolutePath).catch(() => {});
+
+  await logAction({
+    user: req.user,
+    actionType: 'course_material_deleted',
+    actionDetails: `Material ${rows[0].file_name} deleted from course ${courseId}`,
+    ipAddress: req.ip
+  });
+
+  return res.json({ message: 'Material deleted.', material: rows[0] });
 }
 
 export const requestSupplementValidation = [param('courseId').isInt({ min: 1 }), body('notes').optional().isLength({ max: 500 })];

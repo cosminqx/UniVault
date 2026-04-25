@@ -5,6 +5,7 @@ import AuthPage from './pages/AuthPage';
 import StudentDashboardPage from './pages/StudentDashboardPage';
 import StudentCoursePage from './pages/StudentCoursePage';
 import ProfessorPage from './pages/ProfessorPage';
+import ProfessorCoursePage from './pages/ProfessorCoursePage';
 import AdminPage from './pages/AdminPage';
 import AuditPage from './pages/AuditPage';
 import StatsPage from './pages/StatsPage';
@@ -54,6 +55,14 @@ export default function App() {
           element={
             <ProtectedRoute roles={['profesor']}>
               <ProfessorPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/professor/course/:courseId"
+          element={
+            <ProtectedRoute roles={['profesor']}>
+              <ProfessorCoursePage />
             </ProtectedRoute>
           }
         />
