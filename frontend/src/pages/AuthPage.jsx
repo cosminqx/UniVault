@@ -52,11 +52,11 @@ export default function AuthPage() {
 
   const subtitle =
     mode === 'register'
-      ? 'Completeaza datele de mai jos pentru a-ti crea contul. Dupa inregistrare vei primi un cod pe email.'
+      ? 'Completeaza datele de mai jos pentru a-ti crea contul. Dupa inregistrare vei primi un cod afisat direct in pagina.'
       : mode === 'verify'
-        ? 'Introdu codul de 6 cifre primit pe email pentru a activa contul si a intra in platforma.'
+        ? 'Introdu codul de 6 cifre afisat in pagina pentru a activa contul si a intra in platforma.'
         : mode === 'forgot'
-        ? 'Introdu adresa de email si iti trimitem un link pentru resetarea parolei.'
+        ? 'Introdu adresa de email si iti afisam un link pentru resetarea parolei.'
         : mode === 'reset'
           ? 'Linkul de reset ramane in URL. Alege doar parola noua pentru contul tau.'
           : 'Intra in platforma pentru a accesa resursele universitare.';
@@ -87,8 +87,8 @@ export default function AuthPage() {
           setForm((prev) => ({ ...prev, email: data.email, verificationCode: '' }));
           setMode('verify');
           setMessage(
-            data.developmentVerificationCode
-              ? `Cont creat. Cod development: ${data.developmentVerificationCode}`
+            data.verificationCode
+              ? `Cont creat. Codul tau de verificare este: ${data.verificationCode}`
               : data.message
           );
         }
@@ -108,7 +108,7 @@ export default function AuthPage() {
           method: 'POST',
           body: { email: form.email }
         });
-        setMessage(data.developmentResetUrl ? `Reset URL: ${data.developmentResetUrl}` : data.message);
+        setMessage(data.resetUrl ? `${data.message} Link reset: ${data.resetUrl}` : data.message);
       } else if (mode === 'reset') {
         await api('/auth/reset-password', {
           method: 'POST',
@@ -135,8 +135,8 @@ export default function AuthPage() {
         body: { email: form.email }
       });
       setMessage(
-        data.developmentVerificationCode
-          ? `Cod development: ${data.developmentVerificationCode}`
+        data.verificationCode
+          ? `Codul tau nou de verificare este: ${data.verificationCode}`
           : data.message
       );
     } catch (err) {
@@ -192,7 +192,7 @@ export default function AuthPage() {
               Verificam contul pentru: <span className="font-semibold">{form.email || 'email necompletat'}</span>
             </p>
             <button className="btn-link text-sm" onClick={resendVerificationCode} type="button">
-              Retrimite codul pe email
+              Genereaza alt cod
             </button>
           </div>
         )}
@@ -252,7 +252,7 @@ export default function AuthPage() {
             <input
               className="input"
               name="verificationCode"
-              placeholder="Cod de verificare din email"
+              placeholder="Cod de verificare afisat in pagina"
               value={form.verificationCode}
               onChange={updateField}
               required

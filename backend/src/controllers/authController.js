@@ -1,7 +1,6 @@
 import { body } from 'express-validator';
 import { query } from '../config/db.js';
 import { env } from '../config/env.js';
-import { sendEmail } from '../config/mailer.js';
 import { signAuthToken } from '../utils/jwt.js';
 import { comparePassword, generateNumericCode, generateTokenValue, hashPassword, hashToken } from '../utils/security.js';
 import { logAction } from '../utils/audit.js';
@@ -17,21 +16,8 @@ async function createAndSendVerificationCode(user) {
     [user.id, hashedCode, env.emailVerificationCodeExpiresMinutes]
   );
 
-  let sent = false;
-  try {
-    sent = await sendEmail({
-      to: user.email,
-      subject: 'UniVault email verification code',
-      text: `Codul tau de verificare este: ${rawCode}. Codul expira in ${env.emailVerificationCodeExpiresMinutes} minute.`,
-      category: 'Email Verification'
-    });
-  } catch (error) {
-    console.error('Email provider error (email verification):', error.message);
-  }
-
   return {
-    sent,
-    developmentVerificationCode: sent ? undefined : rawCode
+    verificationCode: rawCode
   };
 }
 
@@ -77,10 +63,10 @@ export async function register(req, res) {
   });
 
   return res.status(201).json({
-    message: 'Cont creat. Introdu codul primit pe email pentru a finaliza inregistrarea.',
+    message: 'Cont creat. Introdu codul afisat mai jos pentru a finaliza inregistrarea.',
     requiresEmailVerification: true,
     email: user.email,
-    developmentVerificationCode: verification.developmentVerificationCode
+    verificationCode: verification.verificationCode
   });
 }
 
@@ -239,8 +225,8 @@ export async function resendVerificationCode(req, res) {
   });
 
   return res.json({
-    message: 'Un nou cod de verificare a fost trimis.',
-    developmentVerificationCode: verification.developmentVerificationCode
+    message: 'Un nou cod de verificare a fost generat.',
+    verificationCode: verification.verificationCode
   });
 }
 
@@ -280,19 +266,6 @@ export async function forgotPassword(req, res) {
   );
 
   const resetUrl = `${env.frontendUrl}/reset-password?token=${rawToken}`;
-  let sent = false;
-
-  try {
-    sent = await sendEmail({
-      to: user.email,
-      subject: 'UniVault password reset',
-      text: `Reset your password using this link (valid 1 hour): ${resetUrl}`,
-      category: 'Password Reset'
-    });
-  } catch (error) {
-    // Keep auth flow functional even when external email provider fails.
-    console.error('Email provider error (forgot password):', error.message);
-  }
 
   await logAction({
     user,
@@ -302,8 +275,8 @@ export async function forgotPassword(req, res) {
   });
 
   return res.json({
-    message: 'If the email exists, a reset link was sent.',
-    developmentResetUrl: sent ? undefined : resetUrl
+    message: 'Daca emailul exista, linkul de resetare este afisat mai jos.',
+    resetUrl
   });
 }
 
