@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { api } from '../lib/api';
 import { useAuth } from '../lib/auth';
-import { confirmAction } from '../lib/confirm';
+import { useConfirm } from '../lib/confirmModal';
 import { useToast } from '../lib/toast';
 
 function Field({ label, hint, children }) {
@@ -16,6 +16,7 @@ function Field({ label, hint, children }) {
 
 export default function ProfessorPage() {
   const { token } = useAuth();
+  const { showConfirm } = useConfirm();
   const { showToast } = useToast();
   const [courses, setCourses] = useState([]);
   const [requests, setRequests] = useState([]);
@@ -110,7 +111,8 @@ export default function ProfessorPage() {
       return;
     }
 
-    if (!confirmAction('Creezi acest curs acum? Verifica inca o data titlul, descrierea si resursele.')) {
+    const confirmed = await showConfirm('Creezi acest curs acum? Verifica inca o data titlul, descrierea si resursele.', 'Creare curs');
+    if (!confirmed) {
       return;
     }
 
@@ -168,7 +170,8 @@ export default function ProfessorPage() {
     setMsg('');
     setErr('');
 
-    if (!confirmAction('Vrei sa incarci acest material pentru studenti?')) {
+    const confirmed = await showConfirm('Vrei sa incarci acest material pentru studenti?', 'Incarcare material');
+    if (!confirmed) {
       return;
     }
 
@@ -204,7 +207,10 @@ export default function ProfessorPage() {
     setMsg('');
     setErr('');
 
-    if (!confirmAction(approve ? 'Aprobi aceasta cerere de resurse?' : 'Respingi aceasta cerere de resurse?')) {
+    const message = approve ? 'Aprobi aceasta cerere de resurse?' : 'Respingi aceasta cerere de resurse?';
+    const title = approve ? 'Aproba cerere' : 'Respinge cerere';
+    const confirmed = await showConfirm(message, title);
+    if (!confirmed) {
       return;
     }
 
@@ -239,7 +245,8 @@ export default function ProfessorPage() {
     setMsg('');
     setErr('');
 
-    if (!confirmAction('Trimiti o solicitare de supliment de resurse catre administrator?')) {
+    const confirmed = await showConfirm('Trimiti o solicitare de supliment de resurse catre administrator?', 'Supliment resurse');
+    if (!confirmed) {
       return;
     }
 
@@ -268,7 +275,8 @@ export default function ProfessorPage() {
     setMsg('');
     setErr('');
 
-    if (!confirmAction('Esti sigur ca vrei sa stergi aceasta tema?')) {
+    const confirmed = await showConfirm('Esti sigur ca vrei sa stergi aceasta tema?', 'Stergere tema');
+    if (!confirmed) {
       return;
     }
 

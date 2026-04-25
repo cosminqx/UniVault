@@ -2,12 +2,13 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { api, getUploadUrl } from '../lib/api';
 import { useAuth } from '../lib/auth';
-import { confirmAction } from '../lib/confirm';
+import { useConfirm } from '../lib/confirmModal';
 import { useToast } from '../lib/toast';
 
 export default function StudentCoursePage() {
   const { courseId } = useParams();
   const { token, user } = useAuth();
+  const { showConfirm } = useConfirm();
   const { showToast } = useToast();
 
   const [courseData, setCourseData] = useState(null);
@@ -81,7 +82,8 @@ export default function StudentCoursePage() {
       return;
     }
 
-    if (!confirmAction('Inregistrezi acest consum de token-uri?')) {
+    const confirmed = await showConfirm('Inregistrezi acest consum de token-uri?', 'Consum token-uri');
+    if (!confirmed) {
       return;
     }
 
@@ -115,7 +117,8 @@ export default function StudentCoursePage() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (!confirmAction('Incarci aceasta tema pentru curs?')) {
+    const confirmed = await showConfirm('Incarci aceasta tema pentru curs?', 'Incarcare tema');
+    if (!confirmed) {
       e.target.value = '';
       return;
     }
@@ -138,7 +141,8 @@ export default function StudentCoursePage() {
   }
 
   async function deleteAssignment(assignmentId) {
-    if (!confirmAction('Esti sigur ca vrei sa stergi aceasta tema?')) {
+    const confirmed = await showConfirm('Esti sigur ca vrei sa stergi aceasta tema?', 'Stergere tema');
+    if (!confirmed) {
       return;
     }
 
@@ -155,7 +159,8 @@ export default function StudentCoursePage() {
   }
 
   async function validateVps() {
-    if (!confirmAction('Pornesti validarea VPS prin httpbin?')) {
+    const confirmed = await showConfirm('Pornesti validarea VPS prin httpbin?', 'Validare VPS');
+    if (!confirmed) {
       return;
     }
 
@@ -177,7 +182,8 @@ export default function StudentCoursePage() {
     setErr('');
     setMsg('');
 
-    if (!confirmAction('Trimiti aceasta solicitare de resurse suplimentare?')) {
+    const confirmed = await showConfirm('Trimiti aceasta solicitare de resurse suplimentare?', 'Cerere resurse suplimentare');
+    if (!confirmed) {
       return;
     }
 

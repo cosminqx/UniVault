@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../lib/api';
 import { useAuth } from '../lib/auth';
-import { confirmAction } from '../lib/confirm';
+import { useConfirm } from '../lib/confirmModal';
+import { useToast } from '../lib/toast';
 
 function describeCourseLoad(course) {
   const seats = Number(course.max_students);
@@ -29,6 +30,8 @@ function describeResources(course) {
 
 export default function StudentDashboardPage() {
   const { token, user } = useAuth();
+  const { showConfirm } = useConfirm();
+  const { showToast } = useToast();
   const [data, setData] = useState({ allCourses: [], enrolledCourses: [] });
   const [selectedCourseId, setSelectedCourseId] = useState(null);
   const [msg, setMsg] = useState('');
@@ -55,7 +58,8 @@ export default function StudentDashboardPage() {
     setMsg('');
     setErr('');
 
-    if (!confirmAction('Te inrolezi la acest curs?')) {
+    const confirmed = await showConfirm('Te inrolezi la acest curs?', 'Inrolare curs');
+    if (!confirmed) {
       return;
     }
 

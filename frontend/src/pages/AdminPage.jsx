@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { api } from '../lib/api';
 import { useAuth } from '../lib/auth';
-import { confirmAction } from '../lib/confirm';
+import { useConfirm } from '../lib/confirmModal';
 import { useToast } from '../lib/toast';
 
 function Field({ label, hint, children }) {
@@ -16,6 +16,7 @@ function Field({ label, hint, children }) {
 
 export default function AdminPage() {
   const { token } = useAuth();
+  const { showConfirm } = useConfirm();
   const { showToast } = useToast();
   const [users, setUsers] = useState([]);
   const [activities, setActivities] = useState([]);
@@ -92,7 +93,8 @@ export default function AdminPage() {
       'role:audit': 'Setezi rolul de audit pentru acest utilizator?'
     };
 
-    if (!confirmAction(confirmMessages[action] || 'Confirmi aceasta actiune asupra utilizatorului?')) {
+    const confirmed = await showConfirm(confirmMessages[action] || 'Confirmi aceasta actiune asupra utilizatorului?', 'Confirmare actiune');
+    if (!confirmed) {
       return;
     }
 
@@ -108,7 +110,8 @@ export default function AdminPage() {
   }
 
   async function createActivity() {
-    if (!confirmAction('Adaugi aceasta activitate noua in platforma?')) {
+    const confirmed = await showConfirm('Adaugi aceasta activitate noua in platforma?', 'Adaugare activitate');
+    if (!confirmed) {
       return;
     }
 
@@ -140,7 +143,8 @@ export default function AdminPage() {
   }
 
   async function deleteActivity(id) {
-    if (!confirmAction('Stergi aceasta activitate definitiv?')) {
+    const confirmed = await showConfirm('Stergi aceasta activitate definitiv?', 'Stergere activitate');
+    if (!confirmed) {
       return;
     }
 
@@ -154,7 +158,8 @@ export default function AdminPage() {
   }
 
   async function saveTotals() {
-    if (!confirmAction('Salvezi noile totale ale resurselor universitatii?')) {
+    const confirmed = await showConfirm('Salvezi noile totale ale resurselor universitatii?', 'Salvare totale resurse');
+    if (!confirmed) {
       return;
     }
 
@@ -174,7 +179,8 @@ export default function AdminPage() {
   }
 
   async function confirmDistribution() {
-    if (!confirmAction('Confirmi distributia recomandata pentru cursuri?')) {
+    const confirmed = await showConfirm('Confirmi distributia recomandata pentru cursuri?', 'Confirmare distributie');
+    if (!confirmed) {
       return;
     }
 
@@ -193,7 +199,10 @@ export default function AdminPage() {
   }
 
   async function resolveProfessorSupplement(requestId, approve) {
-    if (!confirmAction(approve ? 'Aprobi suplimentul de resurse pentru profesor?' : 'Respingi suplimentul de resurse pentru profesor?')) {
+    const message = approve ? 'Aprobi suplimentul de resurse pentru profesor?' : 'Respingi suplimentul de resurse pentru profesor?';
+    const title = approve ? 'Aproba supliment' : 'Respinge supliment';
+    const confirmed = await showConfirm(message, title);
+    if (!confirmed) {
       return;
     }
 
@@ -211,7 +220,10 @@ export default function AdminPage() {
   }
 
   async function resolveAdminRequest(requestId, approve) {
-    if (!confirmAction(approve ? 'Aprobi cererea studentului escaladata la administrator?' : 'Respingi cererea studentului escaladata la administrator?')) {
+    const message = approve ? 'Aprobi cererea studentului escaladata la administrator?' : 'Respingi cererea studentului escaladata la administrator?';
+    const title = approve ? 'Aproba cerere' : 'Respinge cerere';
+    const confirmed = await showConfirm(message, title);
+    if (!confirmed) {
       return;
     }
 
@@ -243,7 +255,8 @@ export default function AdminPage() {
       return;
     }
 
-    if (!confirmAction('Trimiti credentialele VPS catre studentii inscrisi la acest curs?')) {
+    const confirmed = await showConfirm('Trimiti credentialele VPS catre studentii inscrisi la acest curs?', 'Trimitere credentiale VPS');
+    if (!confirmed) {
       return;
     }
 
