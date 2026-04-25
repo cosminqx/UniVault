@@ -43,3 +43,7 @@ body {
 .btn-outline {
   @apply btn border border-moss text-moss hover:bg-moss/10;
 }
+
+.btn-link {
+  @apply bg-transparent p-0 text-moss underline underline-offset-2 transition hover:text-moss/75;
+}

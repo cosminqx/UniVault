@@ -12,6 +12,7 @@ export async function getAllCourses(req, res) {
 
   const { rows } = await query(
     `SELECT c.id, c.title, c.description, c.max_students, c.tokens_per_student, c.vps_per_student,
+            u.name AS professor_name, u.email AS professor_email,
             COUNT(e.id)::int AS enrolled_count,
             (c.max_students - COUNT(e.id)::int) AS available_spots,
             EXISTS (
@@ -19,8 +20,9 @@ export async function getAllCourses(req, res) {
             ) AS is_enrolled,
             COALESCE((SELECT COUNT(*)::int FROM course_materials cm WHERE cm.course_id = c.id), 0) AS materials_count
      FROM courses c
+     JOIN users u ON u.id = c.professor_id
      LEFT JOIN enrollments e ON e.course_id = c.id
-     GROUP BY c.id
+     GROUP BY c.id, u.id
      ORDER BY c.created_at DESC`,
     [studentId]
   );

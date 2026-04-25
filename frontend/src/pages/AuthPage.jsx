@@ -36,6 +36,25 @@ export default function AuthPage() {
     else if (role === 'audit') navigate('/audit');
   }
 
+  const isAuthMode = mode === 'login' || mode === 'register';
+  const title =
+    mode === 'register'
+      ? 'Creeaza un cont nou'
+      : mode === 'forgot'
+        ? 'Recuperare parola'
+        : mode === 'reset'
+          ? 'Seteaza o parola noua'
+          : 'Autentificare';
+
+  const subtitle =
+    mode === 'register'
+      ? 'Completeaza datele de mai jos pentru a-ti crea contul.'
+      : mode === 'forgot'
+        ? 'Introdu adresa de email si iti trimitem un link pentru resetarea parolei.'
+        : mode === 'reset'
+          ? 'Introdu tokenul primit si alege o parola noua pentru contul tau.'
+          : 'Intra in platforma pentru a accesa resursele universitare.';
+
   async function submit(e) {
     e.preventDefault();
     setError('');
@@ -81,15 +100,56 @@ export default function AuthPage() {
   return (
     <div className="mx-auto grid min-h-screen max-w-4xl place-items-center px-4 py-10">
       <div className="card w-full max-w-xl">
-        <h2 className="font-heading text-2xl font-bold">Autentificare si Inregistrare</h2>
-        <p className="mt-2 text-sm text-ink/80">Platforma de gestionare a resurselor digitale universitare.</p>
+        <h2 className="font-heading text-2xl font-bold">{title}</h2>
+        <p className="mt-2 text-sm text-ink/80">{subtitle}</p>
 
-        <div className="mt-4 flex flex-wrap gap-2">
-          <button className="btn-outline" onClick={() => setMode('login')}>Login</button>
-          <button className="btn-outline" onClick={() => setMode('register')}>Inregistrare</button>
-          <button className="btn-outline" onClick={() => setMode('forgot')}>Am uitat parola</button>
-          <button className="btn-outline" onClick={() => setMode('reset')}>Reset parola</button>
-        </div>
+        {isAuthMode && (
+          <div className="mt-5 flex flex-wrap gap-2">
+            <button className={mode === 'login' ? 'btn-primary' : 'btn-outline'} onClick={() => setMode('login')} type="button">
+              Login
+            </button>
+            <button className={mode === 'register' ? 'btn-primary' : 'btn-outline'} onClick={() => setMode('register')} type="button">
+              Inregistrare
+            </button>
+          </div>
+        )}
+
+        {!isAuthMode && (
+          <div className="mt-5">
+            <button className="btn-link" onClick={() => setMode('login')} type="button">
+              Inapoi la login
+            </button>
+          </div>
+        )}
+
+        {mode === 'login' && (
+          <div className="mt-3">
+            <button className="btn-link text-sm" onClick={() => setMode('forgot')} type="button">
+              Ai uitat parola?
+            </button>
+          </div>
+        )}
+
+        {mode === 'register' && (
+          <div className="mt-3 text-sm text-ink/75">
+            Ai deja cont?{' '}
+            <button className="btn-link text-sm" onClick={() => setMode('login')} type="button">
+              Mergi la login
+            </button>
+          </div>
+        )}
+
+        {mode === 'forgot' && (
+          <div className="mt-3 text-xs text-ink/70">
+            Dupa ce primesti linkul de reset, vei ajunge automat pe ecranul pentru parola noua.
+          </div>
+        )}
+
+        {mode === 'reset' && (
+          <div className="mt-3 text-xs text-ink/70">
+            Daca ai deschis linkul din email, tokenul ar trebui sa fie deja completat automat.
+          </div>
+        )}
 
         <form className="mt-5 space-y-3" onSubmit={submit}>
           {mode === 'register' && (
