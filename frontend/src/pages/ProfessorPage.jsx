@@ -18,13 +18,14 @@ export default function ProfessorPage() {
   const [requests, setRequests] = useState([]);
   const [msg, setMsg] = useState('');
   const [err, setErr] = useState('');
+  const [busyAction, setBusyAction] = useState('');
   const [fieldErrors, setFieldErrors] = useState({});
   const [newCourse, setNewCourse] = useState({
     title: '',
     description: '',
-    maxStudents: 30,
-    tokensPerStudent: 0,
-    vpsPerStudent: 0
+    maxStudents: '30',
+    tokensPerStudent: '',
+    vpsPerStudent: ''
   });
 
   async function load() {
@@ -93,6 +94,7 @@ export default function ProfessorPage() {
     }
 
     setFieldErrors({});
+    setBusyAction('create-course');
 
     try {
       const resp = await api('/professor/courses', {
@@ -101,16 +103,19 @@ export default function ProfessorPage() {
         body: {
           ...newCourse,
           title: newCourse.title.trim(),
-          description: newCourse.description.trim()
+          description: newCourse.description.trim(),
+          maxStudents: Number(newCourse.maxStudents),
+          tokensPerStudent: Number(newCourse.tokensPerStudent || 0),
+          vpsPerStudent: Number(newCourse.vpsPerStudent || 0)
         }
       });
       setMsg(resp.message);
       setNewCourse({
         title: '',
         description: '',
-        maxStudents: 30,
-        tokensPerStudent: 0,
-        vpsPerStudent: 0
+        maxStudents: '30',
+        tokensPerStudent: '',
+        vpsPerStudent: ''
       });
       await load();
     } catch (e) {
@@ -124,10 +129,15 @@ export default function ProfessorPage() {
       } else {
         setErr(e.message);
       }
+    } finally {
+      setBusyAction('');
     }
   }
 
   async function uploadMaterial(courseId, file) {
+    setMsg('');
+    setErr('');
+    setBusyAction(`upload-${courseId}`);
     const form = new FormData();
     form.append('file', file);
     try {
@@ -137,13 +147,19 @@ export default function ProfessorPage() {
         isForm: true,
         body: form
       });
-      setMsg(resp.message);
+      setMsg(`Material incarcat cu succes. Studentii pot vedea acum fisierul in curs.`);
+      await load();
     } catch (e) {
       setErr(e.message);
+    } finally {
+      setBusyAction('');
     }
   }
 
   async function resolveRequest(id, approve) {
+    setMsg('');
+    setErr('');
+    setBusyAction(`request-${id}`);
     try {
       const resp = await api(`/professor/requests/${id}/resolve`, {
         method: 'POST',
@@ -154,15 +170,23 @@ export default function ProfessorPage() {
       await load();
     } catch (e) {
       setErr(e.message);
+    } finally {
+      setBusyAction('');
     }
   }
 
   async function requestSupplement(courseId) {
+    setMsg('');
+    setErr('');
+    setBusyAction(`supplement-${courseId}`);
     try {
       const resp = await api(`/professor/courses/${courseId}/supplement-request`, { method: 'POST', token, body: {} });
-      setMsg(resp.message);
+      setMsg('Solicitarea de supliment a fost trimisa catre administrator.');
+      await load();
     } catch (e) {
       setErr(e.message);
+    } finally {
+      setBusyAction('');
     }
   }
 
@@ -212,7 +236,7 @@ export default function ProfessorPage() {
                 min={1}
                 placeholder="Ex: 30"
                 value={newCourse.maxStudents}
-                onChange={(e) => updateCourseField('maxStudents', Number(e.target.value))}
+                onChange={(e) => updateCourseField('maxStudents', e.target.value.replace(/\D/g, ''))}
               />
               {fieldErrors.maxStudents ? <p className="text-xs text-red-600">{fieldErrors.maxStudents}</p> : null}
             </div>
@@ -241,12 +265,12 @@ export default function ProfessorPage() {
               <div className="space-y-1">
                 <input
                   className={`input ${fieldErrors.tokensPerStudent ? 'border-red-400 ring-1 ring-red-300' : ''}`}
-                  type="number"
-                  min={0}
-                  placeholder="Ex: 500"
-                  value={newCourse.tokensPerStudent}
-                  onChange={(e) => updateCourseField('tokensPerStudent', Number(e.target.value))}
-                />
+                type="number"
+                min={0}
+                placeholder="Ex: 500"
+                value={newCourse.tokensPerStudent}
+                onChange={(e) => updateCourseField('tokensPerStudent', e.target.value.replace(/\D/g, ''))}
+              />
                 {fieldErrors.tokensPerStudent ? <p className="text-xs text-red-600">{fieldErrors.tokensPerStudent}</p> : null}
               </div>
             </Field>
@@ -258,12 +282,12 @@ export default function ProfessorPage() {
               <div className="space-y-1">
                 <input
                   className={`input ${fieldErrors.vpsPerStudent ? 'border-red-400 ring-1 ring-red-300' : ''}`}
-                  type="number"
-                  min={0}
-                  placeholder="Ex: 1"
-                  value={newCourse.vpsPerStudent}
-                  onChange={(e) => updateCourseField('vpsPerStudent', Number(e.target.value))}
-                />
+                type="number"
+                min={0}
+                placeholder="Ex: 1"
+                value={newCourse.vpsPerStudent}
+                onChange={(e) => updateCourseField('vpsPerStudent', e.target.value.replace(/\D/g, ''))}
+              />
                 {fieldErrors.vpsPerStudent ? <p className="text-xs text-red-600">{fieldErrors.vpsPerStudent}</p> : null}
               </div>
             </Field>
@@ -273,7 +297,9 @@ export default function ProfessorPage() {
             </div>
           </div>
 
-          <button className="btn-primary md:col-span-2" onClick={createCourse}>Creeaza curs</button>
+          <button className="btn-primary md:col-span-2" onClick={createCourse} disabled={busyAction === 'create-course'}>
+            {busyAction === 'create-course' ? 'Se creeaza cursul...' : 'Creeaza curs'}
+          </button>
         </div>
       </section>
 
@@ -297,17 +323,26 @@ export default function ProfessorPage() {
 
               <div className="mt-2 flex flex-wrap gap-2">
                 <label className="btn-outline cursor-pointer">
-                  Incarca material pentru studenti
+                  {busyAction === `upload-${course.id}` ? 'Se incarca materialul...' : 'Incarca material pentru studenti'}
                   <input
                     className="hidden"
                     type="file"
                     onChange={(e) => {
                       const file = e.target.files?.[0];
-                      if (file) uploadMaterial(course.id, file);
+                      if (file) {
+                        uploadMaterial(course.id, file);
+                        e.target.value = '';
+                      }
                     }}
                   />
                 </label>
-                <button className="btn-secondary" onClick={() => requestSupplement(course.id)}>Solicita supliment de 10% resurse</button>
+                <button
+                  className="btn-secondary"
+                  onClick={() => requestSupplement(course.id)}
+                  disabled={busyAction === `supplement-${course.id}`}
+                >
+                  {busyAction === `supplement-${course.id}` ? 'Se trimite solicitarea...' : 'Solicita supliment de 10% resurse'}
+                </button>
               </div>
               <p className="mt-2 text-xs text-ink/65">
                 Foloseste primul buton pentru fisiere precum PDF, suport de curs, laborator sau cerinte. Foloseste al doilea buton cand resursele initiale ale cursului nu mai sunt suficiente.
@@ -337,8 +372,12 @@ export default function ProfessorPage() {
               </p>
               <p className="mt-1">Motiv declarat de student: {r.reason}</p>
               <div className="mt-2 flex gap-2">
-                <button className="btn-primary" onClick={() => resolveRequest(r.id, true)}>Aproba cererea</button>
-                <button className="btn-secondary" onClick={() => resolveRequest(r.id, false)}>Respinge cererea</button>
+                <button className="btn-primary" onClick={() => resolveRequest(r.id, true)} disabled={busyAction === `request-${r.id}`}>
+                  {busyAction === `request-${r.id}` ? 'Se proceseaza...' : 'Aproba cererea'}
+                </button>
+                <button className="btn-secondary" onClick={() => resolveRequest(r.id, false)} disabled={busyAction === `request-${r.id}`}>
+                  {busyAction === `request-${r.id}` ? 'Se proceseaza...' : 'Respinge cererea'}
+                </button>
               </div>
               <p className="mt-2 text-xs text-ink/65">
                 Daca aprobarea depaseste resursele suplimentare disponibile pentru profesor, cererea merge automat mai departe la administrator.

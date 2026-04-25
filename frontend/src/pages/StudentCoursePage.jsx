@@ -9,21 +9,26 @@ export default function StudentCoursePage() {
 
   const [courseData, setCourseData] = useState(null);
   const [activities, setActivities] = useState([]);
-  const [consumeItems, setConsumeItems] = useState([]);
-  const [extraReq, setExtraReq] = useState({ resourceType: 'tokens', quantity: 1, reason: '' });
+  const [extraRequests, setExtraRequests] = useState([]);
+  const [consumeValues, setConsumeValues] = useState({});
+  const [extraReq, setExtraReq] = useState({ resourceType: 'tokens', quantity: '1', reason: '' });
   const [vps, setVps] = useState({ username: '', password: '', ip: '' });
   const [msg, setMsg] = useState('');
   const [err, setErr] = useState('');
   const [apiResponse, setApiResponse] = useState(null);
+  const [submittingExtra, setSubmittingExtra] = useState(false);
+  const [submittingConsumption, setSubmittingConsumption] = useState(false);
 
   async function load() {
     try {
-      const [courseResp, actResp] = await Promise.all([
+      const [courseResp, actResp, requestsResp] = await Promise.all([
         api(`/student/courses/${courseId}`, { token }),
-        api('/student/activities', { token })
+        api('/student/activities', { token }),
+        api('/student/extra-requests', { token })
       ]);
       setCourseData(courseResp);
       setActivities(actResp.activities);
+      setExtraRequests(requestsResp.requests.filter((request) => String(request.course_id) === String(courseId)));
     } catch (e) {
       setErr(e.message);
     }
@@ -33,19 +38,39 @@ export default function StudentCoursePage() {
     load();
   }, [courseId]);
 
-  function updateConsume(activityId, repetitions) {
-    setConsumeItems((prev) => {
-      const filtered = prev.filter((item) => item.activityId !== activityId);
-      if (!repetitions || repetitions <= 0) {
-        return filtered;
-      }
-      return [...filtered, { activityId, repetitions: Number(repetitions) }];
-    });
+  const pendingRequestForType = extraRequests.find(
+    (request) =>
+      request.resource_type === extraReq.resourceType &&
+      (request.status === 'pending_professor' || request.status === 'pending_admin')
+  );
+
+  function getStatusLabel(status) {
+    if (status === 'pending_professor') return 'In asteptare la profesor';
+    if (status === 'pending_admin') return 'Escalata la administrator';
+    if (status === 'approved') return 'Aprobata';
+    if (status === 'rejected') return 'Respinsa';
+    return status;
   }
+
+  function updateConsume(activityId, repetitions) {
+    setConsumeValues((prev) => ({ ...prev, [activityId]: repetitions.replace(/\D/g, '') }));
+  }
+
+  const consumeItems = Object.entries(consumeValues)
+    .map(([activityId, repetitions]) => ({
+      activityId: Number(activityId),
+      repetitions: Number(repetitions)
+    }))
+    .filter((item) => item.repetitions > 0);
 
   async function submitConsumption() {
     setErr('');
     setMsg('');
+    if (!consumeItems.length) {
+      setErr('Completeaza cel putin o activitate cu un numar de repetari mai mare decat 0.');
+      return;
+    }
+    setSubmittingConsumption(true);
     try {
       const resp = await api(`/student/courses/${courseId}/consume`, {
         method: 'POST',
@@ -53,9 +78,12 @@ export default function StudentCoursePage() {
         body: { items: consumeItems }
       });
       setMsg(`${resp.message} Total: ${resp.totalTokens}`);
+      setConsumeValues({});
       await load();
     } catch (e) {
       setErr(e.message);
+    } finally {
+      setSubmittingConsumption(false);
     }
   }
 
@@ -96,15 +124,25 @@ export default function StudentCoursePage() {
   }
 
   async function requestExtra() {
+    setErr('');
+    setMsg('');
+    setSubmittingExtra(true);
     try {
       const resp = await api(`/student/courses/${courseId}/extra-resources`, {
         method: 'POST',
         token,
-        body: extraReq
+        body: {
+          ...extraReq,
+          quantity: Number(extraReq.quantity)
+        }
       });
       setMsg(resp.message);
+      setExtraReq((prev) => ({ ...prev, quantity: '1', reason: '' }));
+      await load();
     } catch (e) {
       setErr(e.message);
+    } finally {
+      setSubmittingExtra(false);
     }
   }
 
@@ -173,16 +211,27 @@ export default function StudentCoursePage() {
                 min={0}
                 className="input max-w-28"
                 placeholder="Repetari"
-                onChange={(e) => updateConsume(activity.id, Number(e.target.value))}
+                value={consumeValues[activity.id] || ''}
+                onChange={(e) => updateConsume(activity.id, e.target.value)}
               />
             </div>
           ))}
-          <button className="btn-secondary" onClick={submitConsumption}>Inregistreaza consum</button>
+          <button className="btn-secondary" onClick={submitConsumption} disabled={submittingConsumption || !consumeItems.length}>
+            {submittingConsumption ? 'Se inregistreaza consumul...' : 'Inregistreaza consum'}
+          </button>
+          {consumeItems.length > 0 && (
+            <p className="text-sm text-ink/70">
+              Ai pregatit {consumeItems.length} activitati pentru trimitere. Dupa inregistrare, formularul se reseteaza automat.
+            </p>
+          )}
         </div>
       </section>
 
       <section className="card">
         <h3 className="font-heading text-lg font-semibold">Solicitare resurse suplimentare</h3>
+        <p className="mt-1 text-sm text-ink/75">
+          Trimite o singura cerere per tip de resursa cat timp solicitarea este in analiza. Vei vedea mai jos statusul exact al cererilor tale.
+        </p>
         <div className="mt-2 grid gap-2 md:grid-cols-3">
           <select className="input" value={extraReq.resourceType} onChange={(e) => setExtraReq({ ...extraReq, resourceType: e.target.value })}>
             <option value="tokens">Token-uri</option>
@@ -193,7 +242,7 @@ export default function StudentCoursePage() {
             min={1}
             className="input"
             value={extraReq.quantity}
-            onChange={(e) => setExtraReq({ ...extraReq, quantity: Number(e.target.value) })}
+            onChange={(e) => setExtraReq({ ...extraReq, quantity: e.target.value.replace(/\D/g, '') })}
           />
           <input
             className="input md:col-span-3"
@@ -201,7 +250,39 @@ export default function StudentCoursePage() {
             value={extraReq.reason}
             onChange={(e) => setExtraReq({ ...extraReq, reason: e.target.value })}
           />
-          <button className="btn-primary md:col-span-3" onClick={requestExtra}>Trimite solicitare</button>
+          {pendingRequestForType && (
+            <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800 md:col-span-3">
+              Ai deja o cerere activa pentru <span className="font-semibold">{extraReq.resourceType}</span>.
+              Status curent: <span className="font-semibold">{getStatusLabel(pendingRequestForType.status)}</span>.
+            </div>
+          )}
+          <button
+            className="btn-primary md:col-span-3"
+            onClick={requestExtra}
+            disabled={Boolean(pendingRequestForType) || submittingExtra}
+          >
+            {submittingExtra ? 'Se trimite solicitarea...' : 'Trimite solicitare'}
+          </button>
+        </div>
+
+        <div className="mt-4 space-y-2">
+          <h4 className="font-semibold">Solicitarile tale pentru acest curs</h4>
+          {extraRequests.length === 0 && (
+            <p className="text-sm text-ink/70">Nu ai trimis inca nicio solicitare suplimentara pentru acest curs.</p>
+          )}
+          {extraRequests.map((request) => (
+            <div key={request.id} className="rounded-xl border border-moss/20 bg-white/80 p-3 text-sm">
+              <div className="flex flex-col gap-1 md:flex-row md:items-center md:justify-between">
+                <p>
+                  <span className="font-semibold">{request.resource_type}</span> x {request.quantity}
+                </p>
+                <span className="rounded-full bg-moss/10 px-3 py-1 text-xs text-moss">
+                  {getStatusLabel(request.status)}
+                </span>
+              </div>
+              <p className="mt-2 text-ink/80">Motiv: {request.reason}</p>
+            </div>
+          ))}
         </div>
       </section>
 

@@ -2,6 +2,38 @@ import { useEffect, useState } from 'react';
 import { api } from '../lib/api';
 import { useAuth } from '../lib/auth';
 
+const actionOptions = [
+  '',
+  'register',
+  'login',
+  'logout',
+  'email_verified',
+  'email_verification_resent',
+  'password_reset_requested',
+  'password_reset_completed',
+  'course_created',
+  'course_material_uploaded',
+  'course_enrolled',
+  'assignment_uploaded',
+  'token_consumed',
+  'vps_validated',
+  'extra_resources_requested',
+  'student_resource_request_approved_professor',
+  'student_resource_request_rejected_professor',
+  'student_resource_request_forwarded_admin',
+  'student_resource_request_admin_resolved',
+  'user_role_updated',
+  'user_role_revoked',
+  'activity_created',
+  'activity_updated',
+  'activity_deleted',
+  'university_resources_updated',
+  'resource_distribution_confirmed',
+  'professor_supplement_requested',
+  'professor_supplement_resolved',
+  'vps_credentials_distributed'
+];
+
 export default function AuditPage() {
   const { token } = useAuth();
   const [logs, setLogs] = useState([]);
@@ -48,7 +80,16 @@ export default function AuditPage() {
             <option value="student">student</option>
             <option value="audit">audit</option>
           </select>
-          <input className="input" placeholder="Tip actiune" value={filters.action} onChange={(e) => setFilters({ ...filters, action: e.target.value })} />
+          <select className="input" value={filters.action} onChange={(e) => setFilters({ ...filters, action: e.target.value })}>
+            <option value="">Toate actiunile</option>
+            {actionOptions
+              .filter(Boolean)
+              .map((action) => (
+                <option key={action} value={action}>
+                  {action}
+                </option>
+              ))}
+          </select>
           <button className="btn-primary" onClick={() => load(1)}>Aplica filtre</button>
         </div>
       </section>

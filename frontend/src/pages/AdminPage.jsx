@@ -27,11 +27,11 @@ export default function AdminPage() {
   const { token } = useAuth();
   const [users, setUsers] = useState([]);
   const [activities, setActivities] = useState([]);
-  const [totals, setTotals] = useState({ total_tokens: 0, total_vps: 0 });
+  const [totals, setTotals] = useState({ total_tokens: '', total_vps: '' });
   const [distribution, setDistribution] = useState([]);
   const [profSuppRequests, setProfSuppRequests] = useState([]);
   const [adminRequests, setAdminRequests] = useState([]);
-  const [newActivity, setNewActivity] = useState({ name: '', tokenCost: 0 });
+  const [newActivity, setNewActivity] = useState({ name: '', tokenCost: '' });
   const [vpsForm, setVpsForm] = useState({ courseId: '', ipAddress: '', username: '', password: '' });
   const [msg, setMsg] = useState('');
   const [err, setErr] = useState('');
@@ -49,7 +49,10 @@ export default function AdminPage() {
       ]);
       setUsers(u.users);
       setActivities(a.activities);
-      setTotals(t.totals);
+      setTotals({
+        total_tokens: String(t.totals.total_tokens ?? ''),
+        total_vps: String(t.totals.total_vps ?? '')
+      });
       setDistribution(d.recommendations);
       setProfSuppRequests(p.requests);
       setAdminRequests(r.requests);
@@ -84,9 +87,16 @@ export default function AdminPage() {
 
   async function createActivity() {
     try {
-      const resp = await api('/admin/activities', { method: 'POST', token, body: newActivity });
+      const resp = await api('/admin/activities', {
+        method: 'POST',
+        token,
+        body: {
+          ...newActivity,
+          tokenCost: Number(newActivity.tokenCost || 0)
+        }
+      });
       setMsg(resp.message);
-      setNewActivity({ name: '', tokenCost: 0 });
+      setNewActivity({ name: '', tokenCost: '' });
       await load();
     } catch (e) {
       setErr(e.message);
@@ -312,10 +322,10 @@ export default function AdminPage() {
               className="input"
               type="number"
               min={0}
-              placeholder="Ex: 220"
-              value={newActivity.tokenCost}
-              onChange={(e) => setNewActivity({ ...newActivity, tokenCost: Number(e.target.value) })}
-            />
+                 placeholder="Ex: 220"
+                 value={newActivity.tokenCost}
+                  onChange={(e) => setNewActivity({ ...newActivity, tokenCost: e.target.value.replace(/\D/g, '') })}
+                />
           </Field>
           <div className="flex items-end">
             <button className="btn-primary w-full" onClick={createActivity}>Adauga activitate</button>
@@ -364,7 +374,7 @@ export default function AdminPage() {
               type="number"
               min={0}
               value={totals.total_tokens}
-              onChange={(e) => setTotals((p) => ({ ...p, total_tokens: Number(e.target.value) }))}
+              onChange={(e) => setTotals((p) => ({ ...p, total_tokens: e.target.value.replace(/\D/g, '') }))}
               placeholder="Ex: 500000"
             />
           </Field>
@@ -377,7 +387,7 @@ export default function AdminPage() {
               type="number"
               min={0}
               value={totals.total_vps}
-              onChange={(e) => setTotals((p) => ({ ...p, total_vps: Number(e.target.value) }))}
+              onChange={(e) => setTotals((p) => ({ ...p, total_vps: e.target.value.replace(/\D/g, '') }))}
               placeholder="Ex: 100"
             />
           </Field>

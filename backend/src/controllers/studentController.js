@@ -289,6 +289,24 @@ export async function requestExtraResources(req, res) {
 
   const professorId = enrollmentRows[0].professor_id;
 
+  const { rows: existingPendingRows } = await query(
+    `SELECT id
+     FROM resource_requests
+     WHERE student_id = $1
+       AND course_id = $2
+       AND resource_type = $3::resource_type
+       AND status IN ('pending_professor', 'pending_admin')
+     ORDER BY created_at DESC
+     LIMIT 1`,
+    [studentId, courseId, req.body.resourceType]
+  );
+
+  if (existingPendingRows.length) {
+    return res.status(409).json({
+      message: 'Ai deja o solicitare in asteptare pentru acest tip de resursa la cursul curent.'
+    });
+  }
+
   const { rows } = await query(
     `INSERT INTO resource_requests (student_id, professor_id, course_id, resource_type, quantity, reason, status)
      VALUES ($1, $2, $3, $4::resource_type, $5, $6, 'pending_professor')

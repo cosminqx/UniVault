@@ -25,6 +25,7 @@ export default function AuthPage() {
 
   const { login, register, applyAuth } = useAuth();
   const navigate = useNavigate();
+  const effectiveResetToken = resetTokenFromUrl || form.token;
 
   function updateField(e) {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
@@ -54,10 +55,10 @@ export default function AuthPage() {
       ? 'Completeaza datele de mai jos pentru a-ti crea contul. Dupa inregistrare vei primi un cod pe email.'
       : mode === 'verify'
         ? 'Introdu codul de 6 cifre primit pe email pentru a activa contul si a intra in platforma.'
-      : mode === 'forgot'
+        : mode === 'forgot'
         ? 'Introdu adresa de email si iti trimitem un link pentru resetarea parolei.'
         : mode === 'reset'
-          ? 'Introdu tokenul primit si alege o parola noua pentru contul tau.'
+          ? 'Linkul de reset ramane in URL. Alege doar parola noua pentru contul tau.'
           : 'Intra in platforma pentru a accesa resursele universitare.';
 
   async function submit(e) {
@@ -111,7 +112,7 @@ export default function AuthPage() {
       } else if (mode === 'reset') {
         await api('/auth/reset-password', {
           method: 'POST',
-          body: { token: form.token, newPassword: form.newPassword }
+          body: { token: effectiveResetToken, newPassword: form.newPassword }
         });
         setMessage('Parola resetata cu succes. Te poti autentifica.');
         setMode('login');
@@ -204,7 +205,7 @@ export default function AuthPage() {
 
         {mode === 'reset' && (
           <div className="mt-3 text-xs text-ink/70">
-            Daca ai deschis linkul din email, tokenul ar trebui sa fie deja completat automat.
+            Tokenul este citit automat din linkul de resetare si nu mai trebuie completat manual.
           </div>
         )}
 
@@ -235,19 +236,16 @@ export default function AuthPage() {
           )}
 
           {mode === 'reset' && (
-            <>
-              <input className="input" name="token" placeholder="Token reset" value={form.token} onChange={updateField} required />
-              <input
-                className="input"
-                type="password"
-                name="newPassword"
-                placeholder="Parola noua"
-                value={form.newPassword}
-                onChange={updateField}
-                required
-                minLength={8}
-              />
-            </>
+            <input
+              className="input"
+              type="password"
+              name="newPassword"
+              placeholder="Parola noua"
+              value={form.newPassword}
+              onChange={updateField}
+              required
+              minLength={8}
+            />
           )}
 
           {mode === 'verify' && (
