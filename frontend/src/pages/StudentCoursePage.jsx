@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { api } from '../lib/api';
+import { api, getUploadUrl } from '../lib/api';
 import { useAuth } from '../lib/auth';
 import { useToast } from '../lib/toast';
 
@@ -167,7 +167,13 @@ export default function StudentCoursePage() {
   if (!courseData) return <div>Loading course...</div>;
 
   return (
-    <div className="space-y-6">
+    <div className="relative space-y-6">
+      {!isAdmin && (
+        <div className="fixed right-4 top-20 z-10 rounded-xl border border-moss/25 bg-white/95 px-4 py-2 text-sm shadow-sm backdrop-blur">
+          <p className="font-semibold text-ink">Tokenuri ramase</p>
+          <p className="text-moss">{courseData.resources.remainingTokens}</p>
+        </div>
+      )}
       <h2 className="font-heading text-3xl font-bold">{courseData.course.title}</h2>
       <p>{courseData.course.description}</p>
       {isAdmin && (
@@ -209,7 +215,7 @@ export default function StudentCoursePage() {
         <ul className="mt-3 list-disc pl-6">
           {courseData.materials.map((m) => (
             <li key={m.id}>
-              <a className="text-moss underline" href={`http://localhost:4000/uploads/${m.file_path}`} target="_blank" rel="noreferrer">
+              <a className="text-moss underline" href={getUploadUrl(m.file_path)} target="_blank" rel="noreferrer">
                 {m.file_name}
               </a>
             </li>
@@ -223,7 +229,11 @@ export default function StudentCoursePage() {
         <input className="mt-2" type="file" onChange={uploadAssignment} />
         <ul className="mt-3 list-disc pl-6">
           {courseData.assignments.map((a) => (
-            <li key={a.id}>{a.file_name}</li>
+            <li key={a.id}>
+              <a className="text-moss underline" href={getUploadUrl(a.file_path)} target="_blank" rel="noreferrer">
+                {a.file_name}
+              </a>
+            </li>
           ))}
         </ul>
         </section>
