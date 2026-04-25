@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { api } from '../lib/api';
 import { useAuth } from '../lib/auth';
+import { useToast } from '../lib/toast';
 
 function Field({ label, hint, children }) {
   return (
@@ -14,6 +15,7 @@ function Field({ label, hint, children }) {
 
 export default function AdminPage() {
   const { token } = useAuth();
+  const { showToast } = useToast();
   const [users, setUsers] = useState([]);
   const [activities, setActivities] = useState([]);
   const [totals, setTotals] = useState({ total_tokens: '', total_vps: '' });
@@ -189,6 +191,20 @@ export default function AdminPage() {
   }
 
   async function sendVpsCreds() {
+    setMsg('');
+    setErr('');
+
+    if (!vpsForm.courseId || !vpsForm.ipAddress || !vpsForm.username || !vpsForm.password) {
+      const validationMessage = 'Completeaza cursul si toate credentialele VPS inainte de trimitere.';
+      setErr(validationMessage);
+      showToast({
+        title: 'Date incomplete',
+        message: validationMessage,
+        type: 'error'
+      });
+      return;
+    }
+
     try {
       const resp = await api(`/admin/courses/${vpsForm.courseId}/send-vps-credentials`, {
         method: 'POST',
@@ -200,8 +216,19 @@ export default function AdminPage() {
         }
       });
       setMsg(`${resp.message} Recipients: ${resp.recipients.length}`);
+      const selectedCourse = distribution.find((course) => String(course.courseId) === String(vpsForm.courseId));
+      showToast({
+        title: 'VPS adaugat si trimis',
+        message: `${selectedCourse?.title || 'Cursul selectat'} are acum credentiale VPS salvate. Notificarea a fost procesata pentru ${resp.recipients.length} studenti.`
+      });
+      setVpsForm({ courseId: '', ipAddress: '', username: '', password: '' });
     } catch (e) {
       setErr(e.message);
+      showToast({
+        title: 'Trimiterea VPS a esuat',
+        message: e.message,
+        type: 'error'
+      });
     }
   }
 
