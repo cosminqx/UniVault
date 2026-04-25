@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../lib/api';
 import { useAuth } from '../lib/auth';
+import { confirmAction } from '../lib/confirm';
 
 function describeCourseLoad(course) {
   const seats = Number(course.max_students);
@@ -53,6 +54,11 @@ export default function StudentDashboardPage() {
   async function enroll(courseId) {
     setMsg('');
     setErr('');
+
+    if (!confirmAction('Te inrolezi la acest curs?')) {
+      return;
+    }
+
     try {
       const response = await api(`/student/courses/${courseId}/enroll`, { method: 'POST', token });
       setMsg(response.message);

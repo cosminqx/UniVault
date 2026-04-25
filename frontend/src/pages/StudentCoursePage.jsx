@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { api, getUploadUrl } from '../lib/api';
 import { useAuth } from '../lib/auth';
+import { confirmAction } from '../lib/confirm';
 import { useToast } from '../lib/toast';
 
 export default function StudentCoursePage() {
@@ -79,6 +80,11 @@ export default function StudentCoursePage() {
       });
       return;
     }
+
+    if (!confirmAction('Inregistrezi acest consum de token-uri?')) {
+      return;
+    }
+
     setSubmittingConsumption(true);
     try {
       const resp = await api(`/student/courses/${courseId}/consume`, {
@@ -109,6 +115,11 @@ export default function StudentCoursePage() {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    if (!confirmAction('Incarci aceasta tema pentru curs?')) {
+      e.target.value = '';
+      return;
+    }
+
     const form = new FormData();
     form.append('file', file);
 
@@ -127,6 +138,10 @@ export default function StudentCoursePage() {
   }
 
   async function validateVps() {
+    if (!confirmAction('Pornesti validarea VPS prin httpbin?')) {
+      return;
+    }
+
     try {
       const resp = await api(`/student/courses/${courseId}/vps/validate`, {
         method: 'POST',
@@ -144,6 +159,11 @@ export default function StudentCoursePage() {
   async function requestExtra() {
     setErr('');
     setMsg('');
+
+    if (!confirmAction('Trimiti aceasta solicitare de resurse suplimentare?')) {
+      return;
+    }
+
     setSubmittingExtra(true);
     try {
       const resp = await api(`/student/courses/${courseId}/extra-resources`, {

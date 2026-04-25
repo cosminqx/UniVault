@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { api } from '../lib/api';
 import { useAuth } from '../lib/auth';
+import { confirmAction } from '../lib/confirm';
 import { useToast } from '../lib/toast';
 
 function Field({ label, hint, children }) {
@@ -82,6 +83,19 @@ export default function AdminPage() {
 
     if (!action) return;
 
+    const confirmMessages = {
+      revoke: 'Revoci acest utilizator la rolul de student?',
+      revoke_deactivate: 'Revoci acest utilizator la rolul de student si il dezactivezi?',
+      'role:administrator': 'Setezi rolul de administrator pentru acest utilizator?',
+      'role:profesor': 'Setezi rolul de profesor pentru acest utilizator?',
+      'role:student': 'Setezi rolul de student pentru acest utilizator?',
+      'role:audit': 'Setezi rolul de audit pentru acest utilizator?'
+    };
+
+    if (!confirmAction(confirmMessages[action] || 'Confirmi aceasta actiune asupra utilizatorului?')) {
+      return;
+    }
+
     if (action.startsWith('role:')) {
       await setRole(userId, action.replace('role:', ''));
     } else if (action === 'revoke') {
@@ -94,6 +108,10 @@ export default function AdminPage() {
   }
 
   async function createActivity() {
+    if (!confirmAction('Adaugi aceasta activitate noua in platforma?')) {
+      return;
+    }
+
     try {
       const resp = await api('/admin/activities', {
         method: 'POST',
@@ -122,6 +140,10 @@ export default function AdminPage() {
   }
 
   async function deleteActivity(id) {
+    if (!confirmAction('Stergi aceasta activitate definitiv?')) {
+      return;
+    }
+
     try {
       const resp = await api(`/admin/activities/${id}`, { method: 'DELETE', token });
       setMsg(resp.message);
@@ -132,6 +154,10 @@ export default function AdminPage() {
   }
 
   async function saveTotals() {
+    if (!confirmAction('Salvezi noile totale ale resurselor universitatii?')) {
+      return;
+    }
+
     try {
       const resp = await api('/admin/resources/totals', {
         method: 'PUT',
@@ -148,6 +174,10 @@ export default function AdminPage() {
   }
 
   async function confirmDistribution() {
+    if (!confirmAction('Confirmi distributia recomandata pentru cursuri?')) {
+      return;
+    }
+
     try {
       const payload = distribution.map((d) => ({
         courseId: d.courseId,
@@ -163,6 +193,10 @@ export default function AdminPage() {
   }
 
   async function resolveProfessorSupplement(requestId, approve) {
+    if (!confirmAction(approve ? 'Aprobi suplimentul de resurse pentru profesor?' : 'Respingi suplimentul de resurse pentru profesor?')) {
+      return;
+    }
+
     try {
       const resp = await api(`/admin/supplements/professors/${requestId}/resolve`, {
         method: 'POST',
@@ -177,6 +211,10 @@ export default function AdminPage() {
   }
 
   async function resolveAdminRequest(requestId, approve) {
+    if (!confirmAction(approve ? 'Aprobi cererea studentului escaladata la administrator?' : 'Respingi cererea studentului escaladata la administrator?')) {
+      return;
+    }
+
     try {
       const resp = await api(`/admin/requests/${requestId}/resolve`, {
         method: 'POST',
@@ -202,6 +240,10 @@ export default function AdminPage() {
         message: validationMessage,
         type: 'error'
       });
+      return;
+    }
+
+    if (!confirmAction('Trimiti credentialele VPS catre studentii inscrisi la acest curs?')) {
       return;
     }
 

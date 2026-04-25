@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { api } from '../lib/api';
 import { useAuth } from '../lib/auth';
+import { confirmAction } from '../lib/confirm';
 import { useToast } from '../lib/toast';
 
 function Field({ label, hint, children }) {
@@ -109,6 +110,10 @@ export default function ProfessorPage() {
       return;
     }
 
+    if (!confirmAction('Creezi acest curs acum? Verifica inca o data titlul, descrierea si resursele.')) {
+      return;
+    }
+
     setFieldErrors({});
     setBusyAction('create-course');
 
@@ -162,6 +167,11 @@ export default function ProfessorPage() {
   async function uploadMaterial(courseId, file) {
     setMsg('');
     setErr('');
+
+    if (!confirmAction('Vrei sa incarci acest material pentru studenti?')) {
+      return;
+    }
+
     setBusyAction(`upload-${courseId}`);
     const form = new FormData();
     form.append('file', file);
@@ -193,6 +203,11 @@ export default function ProfessorPage() {
   async function resolveRequest(id, approve) {
     setMsg('');
     setErr('');
+
+    if (!confirmAction(approve ? 'Aprobi aceasta cerere de resurse?' : 'Respingi aceasta cerere de resurse?')) {
+      return;
+    }
+
     setBusyAction(`request-${id}`);
     try {
       const resp = await api(`/professor/requests/${id}/resolve`, {
@@ -223,6 +238,11 @@ export default function ProfessorPage() {
   async function requestSupplement(courseId) {
     setMsg('');
     setErr('');
+
+    if (!confirmAction('Trimiti o solicitare de supliment de resurse catre administrator?')) {
+      return;
+    }
+
     setBusyAction(`supplement-${courseId}`);
     try {
       const resp = await api(`/professor/courses/${courseId}/supplement-request`, { method: 'POST', token, body: {} });
