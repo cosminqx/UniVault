@@ -22,6 +22,7 @@ export default function ProfessorPage() {
   const [err, setErr] = useState('');
   const [busyAction, setBusyAction] = useState('');
   const [fieldErrors, setFieldErrors] = useState({});
+  const [courseAssignments, setCourseAssignments] = useState({});
   const [newCourse, setNewCourse] = useState({
     title: '',
     description: '',
@@ -38,6 +39,19 @@ export default function ProfessorPage() {
       ]);
       setCourses(courseResp.courses);
       setRequests(reqResp.requests);
+
+      // Fetch student assignments for each course
+      const assignmentsMap = {};
+      for (const course of courseResp.courses) {
+        try {
+          const assignResp = await api(`/professor/courses/${course.id}/student-assignments`, { token });
+          assignmentsMap[course.id] = assignResp.assignments || [];
+        } catch (e) {
+          console.error(`Failed to fetch assignments for course ${course.id}:`, e);
+          assignmentsMap[course.id] = [];
+        }
+      }
+      setCourseAssignments(assignmentsMap);
     } catch (e) {
       setErr(e.message);
     }
@@ -409,6 +423,37 @@ export default function ProfessorPage() {
                         <p className="font-medium break-all">{material.file_name}</p>
                         <p className="mt-1 text-xs text-ink/65">
                           Adaugat la {new Date(material.uploaded_at).toLocaleString()}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="mt-4 rounded-xl border border-moss/15 bg-white/70 p-3">
+                <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                  <h5 className="font-semibold">Tema adaugata de studenti</h5>
+                  <span className="text-xs text-ink/60">
+                    {(courseAssignments[course.id] || []).length} fisiere
+                  </span>
+                </div>
+
+                {(!courseAssignments[course.id] || courseAssignments[course.id].length === 0) && (
+                  <p className="mt-2 text-sm text-ink/70">
+                    Studentii nu au incarcat tema inca pentru acest curs.
+                  </p>
+                )}
+
+                {courseAssignments[course.id]?.length > 0 && (
+                  <div className="mt-3 space-y-2">
+                    {courseAssignments[course.id].map((assignment) => (
+                      <div key={assignment.id} className="rounded-xl border border-moss/10 bg-canvas/60 p-3 text-sm">
+                        <p className="font-medium break-all">{assignment.file_name}</p>
+                        <p className="text-xs text-ink/70">
+                          Incarcata de <span className="font-semibold">{assignment.student_name}</span> ({assignment.student_email})
+                        </p>
+                        <p className="mt-1 text-xs text-ink/65">
+                          {new Date(assignment.uploaded_at).toLocaleString()}
                         </p>
                       </div>
                     ))}

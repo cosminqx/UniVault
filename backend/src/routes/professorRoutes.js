@@ -5,6 +5,8 @@ import {
   addMaterial,
   createCourse,
   createCourseValidation,
+  getStudentAssignments,
+  getStudentAssignmentsValidation,
   listProfessorCourses,
   listStudentRequestsForProfessor,
   requestProfessorSupplement,
@@ -22,6 +24,7 @@ router.use(authRequired, requireRole('profesor'));
 router.post('/courses', createCourseValidation, validateRequest, createCourse);
 router.get('/courses', listProfessorCourses);
 router.post('/courses/:courseId/materials', uploadMaterial, uploadMaterialValidation, validateRequest, addMaterial);
+router.get('/courses/:courseId/student-assignments', getStudentAssignmentsValidation, validateRequest, getStudentAssignments);
 
 router.post('/courses/:courseId/supplement-request', requestSupplementValidation, validateRequest, requestProfessorSupplement);
 
