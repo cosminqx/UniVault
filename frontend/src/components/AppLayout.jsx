@@ -3,13 +3,13 @@ import { useAuth } from '../lib/auth';
 
 const menuByRole = {
   administrator: [
-    { to: '/admin', label: 'Admin' },
+    { to: '/admin', label: 'Acasa' },
     { to: '/student', label: 'Cursuri' },
     { to: '/stats', label: 'Statistici' }
   ],
-  profesor: [{ to: '/professor', label: 'Profesor' }],
-  student: [{ to: '/student', label: 'Student' }],
-  audit: [{ to: '/audit', label: 'Audit' }]
+  profesor: [{ to: '/professor', label: 'Acasa' }],
+  student: [{ to: '/student', label: 'Acasa' }],
+  audit: [{ to: '/audit', label: 'Acasa' }]
 };
 
 export default function AppLayout() {

@@ -178,26 +178,6 @@ export default function AdminPage() {
     }
   }
 
-  async function confirmDistribution() {
-    const confirmed = await showConfirm('Confirmi distributia recomandata pentru cursuri?', 'Confirmare distributie');
-    if (!confirmed) {
-      return;
-    }
-
-    try {
-      const payload = distribution.map((d) => ({
-        courseId: d.courseId,
-        allocatedTokens: d.recommendedTokens,
-        allocatedVps: d.recommendedVps
-      }));
-      const resp = await api('/admin/resources/distribution/confirm', { method: 'POST', token, body: { allocations: payload } });
-      setMsg(resp.message);
-      await load();
-    } catch (e) {
-      setErr(e.message);
-    }
-  }
-
   async function resolveProfessorSupplement(requestId, approve) {
     const message = approve ? 'Aprobi suplimentul de resurse pentru profesor?' : 'Respingi suplimentul de resurse pentru profesor?';
     const title = approve ? 'Aproba supliment' : 'Respinge supliment';
@@ -449,18 +429,6 @@ export default function AdminPage() {
           <button className="btn-primary md:col-span-2" onClick={saveTotals}>Salveaza totale</button>
         </div>
 
-        <h4 className="mt-4 font-semibold">Distribuire recomandata per curs</h4>
-        <p className="mt-1 text-sm text-ink/75">
-          Sistemul calculeaza automat o recomandare pe baza numarului de studenti inscrisi si a resurselor necesare per student, apoi adauga o marja de aproximativ 10%.
-        </p>
-        <div className="mt-2 space-y-2 text-sm">
-          {distribution.map((d) => (
-            <div key={d.courseId} className="rounded-lg border border-moss/20 p-2">
-              <span className="font-semibold">{d.title}</span>: {d.students} studenti inscrisi, {d.recommendedTokens} token-uri recomandate, {d.recommendedVps} VPS recomandate
-            </div>
-          ))}
-        </div>
-        <button className="btn-secondary mt-3" onClick={confirmDistribution}>Confirma distributia recomandata</button>
       </section>
 
       <section className="card">
