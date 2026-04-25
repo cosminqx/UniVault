@@ -37,10 +37,17 @@ export async function register(req, res) {
       return res.status(409).json({ message: 'Email already registered.' });
     }
 
+    const { rows: pendingUserRows } = await query(
+      'SELECT id, name, email, role, email_verified FROM users WHERE email = $1',
+      [email]
+    );
+    const verification = await createAndSendVerificationCode(pendingUserRows[0]);
+
     return res.status(409).json({
       message: 'Acest email este deja inregistrat, dar nu a fost inca verificat. Foloseste verificarea codului sau cere retrimiterea lui.',
       requiresEmailVerification: true,
-      email
+      email,
+      verificationCode: verification.verificationCode
     });
   }
 
@@ -93,10 +100,12 @@ export async function login(req, res) {
   }
 
   if (!user.email_verified) {
+    const verification = await createAndSendVerificationCode(user);
     return res.status(403).json({
       message: 'Emailul nu a fost verificat. Verifica adresa de email si introdu codul primit.',
       requiresEmailVerification: true,
-      email: user.email
+      email: user.email,
+      verificationCode: verification.verificationCode
     });
   }
 

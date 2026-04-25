@@ -121,6 +121,10 @@ export default function AuthPage() {
       if (err.payload?.requiresEmailVerification && err.payload?.email) {
         setForm((prev) => ({ ...prev, email: err.payload.email }));
         setMode('verify');
+        if (err.payload?.verificationCode) {
+          setMessage(`Codul tau de verificare este: ${err.payload.verificationCode}`);
+          return;
+        }
       }
       setError(err.message || 'Actiune esuata.');
     }
