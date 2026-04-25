@@ -18,3 +18,9 @@ export function generateTokenValue() {
 export function hashToken(raw) {
   return crypto.createHash('sha256').update(raw).digest('hex');
 }
+
+export function generateNumericCode(length = 6) {
+  const max = 10 ** length;
+  const min = 10 ** (length - 1);
+  return String(crypto.randomInt(min, max));
+}

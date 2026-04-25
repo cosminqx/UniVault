@@ -40,10 +40,10 @@ async function run() {
   for (const u of users) {
     const hash = await hashPassword(u.password);
     await query(
-      `INSERT INTO users (name, email, password_hash, role)
-       VALUES ($1, $2, $3, $4::user_role)
+      `INSERT INTO users (name, email, password_hash, role, email_verified)
+       VALUES ($1, $2, $3, $4::user_role, TRUE)
        ON CONFLICT (email) DO UPDATE
-       SET name = EXCLUDED.name, password_hash = EXCLUDED.password_hash, role = EXCLUDED.role`,
+       SET name = EXCLUDED.name, password_hash = EXCLUDED.password_hash, role = EXCLUDED.role, email_verified = TRUE`,
       [u.name, u.email, hash, u.role]
     );
   }

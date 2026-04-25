@@ -8,8 +8,12 @@ import {
   me,
   register,
   registerValidation,
+  resendVerificationCode,
+  resendVerificationCodeValidation,
   resetPassword,
-  resetPasswordValidation
+  resetPasswordValidation,
+  verifyEmail,
+  verifyEmailValidation
 } from '../controllers/authController.js';
 import { validateRequest } from '../middleware/validate.js';
 import { authRequired } from '../middleware/auth.js';
@@ -19,6 +23,13 @@ const router = Router();
 
 router.post('/register', registerValidation, validateRequest, asyncHandler(register));
 router.post('/login', loginValidation, validateRequest, asyncHandler(login));
+router.post('/verify-email', verifyEmailValidation, validateRequest, asyncHandler(verifyEmail));
+router.post(
+  '/resend-verification-code',
+  resendVerificationCodeValidation,
+  validateRequest,
+  asyncHandler(resendVerificationCode)
+);
 router.post('/forgot-password', forgotPasswordValidation, validateRequest, asyncHandler(forgotPassword));
 router.post('/reset-password', resetPasswordValidation, validateRequest, asyncHandler(resetPassword));
 router.get('/me', authRequired, asyncHandler(me));

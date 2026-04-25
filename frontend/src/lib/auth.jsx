@@ -30,20 +30,24 @@ export function AuthProvider({ children }) {
     boot();
   }, [token]);
 
-  async function login(email, password) {
-    const data = await api('/auth/login', { method: 'POST', body: { email, password } });
+  function applyAuth(data) {
+    if (!data?.token || !data?.user) {
+      return data;
+    }
     localStorage.setItem(TOKEN_KEY, data.token);
     setToken(data.token);
     setUser(data.user);
     return data.user;
   }
 
+  async function login(email, password) {
+    const data = await api('/auth/login', { method: 'POST', body: { email, password } });
+    return applyAuth(data);
+  }
+
   async function register(payload) {
     const data = await api('/auth/register', { method: 'POST', body: payload });
-    localStorage.setItem(TOKEN_KEY, data.token);
-    setToken(data.token);
-    setUser(data.user);
-    return data.user;
+    return applyAuth(data) || data;
   }
 
   async function logout() {
@@ -59,7 +63,7 @@ export function AuthProvider({ children }) {
   }
 
   const value = useMemo(
-    () => ({ token, user, loading, login, register, logout, setUser }),
+    () => ({ token, user, loading, login, register, logout, setUser, applyAuth }),
     [token, user, loading]
   );
 

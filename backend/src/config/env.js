@@ -14,6 +14,7 @@ export const env = {
   jwtSecret: process.env.JWT_SECRET || 'change_me',
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || '7d',
   resetTokenExpiresMinutes: Number(process.env.RESET_TOKEN_EXPIRES_MINUTES || 60),
+  emailVerificationCodeExpiresMinutes: Number(process.env.EMAIL_VERIFICATION_CODE_EXPIRES_MINUTES || 10),
   smtpHost: process.env.SMTP_HOST,
   smtpPort: Number(process.env.SMTP_PORT || 587),
   smtpSecure: process.env.SMTP_SECURE === 'true',

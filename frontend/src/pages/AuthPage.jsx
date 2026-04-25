@@ -18,11 +18,12 @@ export default function AuthPage() {
     email: '',
     password: '',
     confirmPassword: '',
+    verificationCode: '',
     token: resetTokenFromUrl,
     newPassword: ''
   });
 
-  const { login, register } = useAuth();
+  const { login, register, applyAuth } = useAuth();
   const navigate = useNavigate();
 
   function updateField(e) {
@@ -40,6 +41,8 @@ export default function AuthPage() {
   const title =
     mode === 'register'
       ? 'Creeaza un cont nou'
+      : mode === 'verify'
+        ? 'Verifica adresa de email'
       : mode === 'forgot'
         ? 'Recuperare parola'
         : mode === 'reset'
@@ -48,7 +51,9 @@ export default function AuthPage() {
 
   const subtitle =
     mode === 'register'
-      ? 'Completeaza datele de mai jos pentru a-ti crea contul.'
+      ? 'Completeaza datele de mai jos pentru a-ti crea contul. Dupa inregistrare vei primi un cod pe email.'
+      : mode === 'verify'
+        ? 'Introdu codul de 6 cifre primit pe email pentru a activa contul si a intra in platforma.'
       : mode === 'forgot'
         ? 'Introdu adresa de email si iti trimitem un link pentru resetarea parolei.'
         : mode === 'reset'
@@ -71,12 +76,31 @@ export default function AuthPage() {
         if (form.password !== form.confirmPassword) {
           throw new Error('Parolele nu coincid.');
         }
-        const user = await register({
+        const data = await register({
           name: form.name,
           email: form.email,
           password: form.password,
           confirmPassword: form.confirmPassword
         });
+        if (data?.requiresEmailVerification) {
+          setForm((prev) => ({ ...prev, email: data.email, verificationCode: '' }));
+          setMode('verify');
+          setMessage(
+            data.developmentVerificationCode
+              ? `Cont creat. Cod development: ${data.developmentVerificationCode}`
+              : data.message
+          );
+        }
+      } else if (mode === 'verify') {
+        const data = await api('/auth/verify-email', {
+          method: 'POST',
+          body: {
+            email: form.email,
+            code: form.verificationCode
+          }
+        });
+        const user = applyAuth(data);
+        setMessage(data.message);
         redirectByRole(user.role);
       } else if (mode === 'forgot') {
         const data = await api('/auth/forgot-password', {
@@ -93,7 +117,29 @@ export default function AuthPage() {
         setMode('login');
       }
     } catch (err) {
+      if (err.payload?.requiresEmailVerification && err.payload?.email) {
+        setForm((prev) => ({ ...prev, email: err.payload.email }));
+        setMode('verify');
+      }
       setError(err.message || 'Actiune esuata.');
+    }
+  }
+
+  async function resendVerificationCode() {
+    setError('');
+    setMessage('');
+    try {
+      const data = await api('/auth/resend-verification-code', {
+        method: 'POST',
+        body: { email: form.email }
+      });
+      setMessage(
+        data.developmentVerificationCode
+          ? `Cod development: ${data.developmentVerificationCode}`
+          : data.message
+      );
+    } catch (err) {
+      setError(err.message || 'Nu am putut retrimite codul.');
     }
   }
 
@@ -139,6 +185,17 @@ export default function AuthPage() {
           </div>
         )}
 
+        {mode === 'verify' && (
+          <div className="mt-3 space-y-2 text-sm text-ink/75">
+            <p>
+              Verificam contul pentru: <span className="font-semibold">{form.email || 'email necompletat'}</span>
+            </p>
+            <button className="btn-link text-sm" onClick={resendVerificationCode} type="button">
+              Retrimite codul pe email
+            </button>
+          </div>
+        )}
+
         {mode === 'forgot' && (
           <div className="mt-3 text-xs text-ink/70">
             Dupa ce primesti linkul de reset, vei ajunge automat pe ecranul pentru parola noua.
@@ -156,7 +213,7 @@ export default function AuthPage() {
             <input className="input" name="name" placeholder="Nume" value={form.name} onChange={updateField} required />
           )}
 
-          {(mode === 'login' || mode === 'register' || mode === 'forgot') && (
+          {(mode === 'login' || mode === 'register' || mode === 'forgot' || mode === 'verify') && (
             <input className="input" type="email" name="email" placeholder="Email" value={form.email} onChange={updateField} required />
           )}
 
@@ -193,12 +250,27 @@ export default function AuthPage() {
             </>
           )}
 
+          {mode === 'verify' && (
+            <input
+              className="input"
+              name="verificationCode"
+              placeholder="Cod de verificare din email"
+              value={form.verificationCode}
+              onChange={updateField}
+              required
+              inputMode="numeric"
+              minLength={6}
+              maxLength={6}
+            />
+          )}
+
           {error && <p className="rounded-lg bg-red-100 p-2 text-sm text-red-700">{error}</p>}
           {message && <p className="rounded-lg bg-green-100 p-2 text-sm text-green-700">{message}</p>}
 
           <button className="btn-primary w-full" type="submit">
             {mode === 'login' && 'Autentificare'}
             {mode === 'register' && 'Creeaza cont'}
+            {mode === 'verify' && 'Verifica emailul'}
             {mode === 'forgot' && 'Trimite link reset'}
             {mode === 'reset' && 'Reseteaza parola'}
           </button>

@@ -1,6 +1,23 @@
-CREATE TYPE user_role AS ENUM ('administrator', 'profesor', 'student', 'audit');
-CREATE TYPE resource_type AS ENUM ('tokens', 'vps');
-CREATE TYPE request_status AS ENUM ('pending_professor', 'pending_admin', 'approved', 'rejected');
+DO $$
+BEGIN
+  CREATE TYPE user_role AS ENUM ('administrator', 'profesor', 'student', 'audit');
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+END $$;
+
+DO $$
+BEGIN
+  CREATE TYPE resource_type AS ENUM ('tokens', 'vps');
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+END $$;
+
+DO $$
+BEGIN
+  CREATE TYPE request_status AS ENUM ('pending_professor', 'pending_admin', 'approved', 'rejected');
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+END $$;
 
 CREATE TABLE IF NOT EXISTS users (
   id SERIAL PRIMARY KEY,
@@ -13,10 +30,22 @@ CREATE TABLE IF NOT EXISTS users (
   updated_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
+ALTER TABLE users
+ADD COLUMN IF NOT EXISTS email_verified BOOLEAN NOT NULL DEFAULT FALSE;
+
 CREATE TABLE IF NOT EXISTS password_reset_tokens (
   id SERIAL PRIMARY KEY,
   user_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   token_hash TEXT NOT NULL,
+  expires_at TIMESTAMP NOT NULL,
+  used_at TIMESTAMP,
+  created_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS email_verification_codes (
+  id SERIAL PRIMARY KEY,
+  user_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  code_hash TEXT NOT NULL,
   expires_at TIMESTAMP NOT NULL,
   used_at TIMESTAMP,
   created_at TIMESTAMP NOT NULL DEFAULT NOW()
