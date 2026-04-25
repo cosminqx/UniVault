@@ -16,9 +16,27 @@ const app = express();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+const allowedOrigins = new Set([env.frontendUrl]);
+try {
+  const frontend = new URL(env.frontendUrl);
+  if (frontend.hostname === 'localhost') {
+    allowedOrigins.add(`${frontend.protocol}//127.0.0.1:${frontend.port}`);
+  } else if (frontend.hostname === '127.0.0.1') {
+    allowedOrigins.add(`${frontend.protocol}//localhost:${frontend.port}`);
+  }
+} catch {
+  // Keep strict env.frontendUrl-only behavior if URL parsing fails.
+}
+
 app.use(
   cors({
-    origin: env.frontendUrl,
+    origin(origin, callback) {
+      if (!origin || allowedOrigins.has(origin)) {
+        callback(null, true);
+        return;
+      }
+      callback(new Error('Not allowed by CORS'));
+    },
     credentials: true
   })
 );
