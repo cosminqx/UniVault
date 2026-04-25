@@ -8,6 +8,10 @@ import {
   deleteMaterial,
   deleteMaterialValidation,
   getProfessorCourseDetails,
+  downloadAssignment,
+  downloadAssignmentValidation,
+  getStudentAssignments,
+  getStudentAssignmentsValidation,
   listProfessorCourses,
   listStudentRequestsForProfessor,
   professorCourseAccessValidation,
@@ -28,6 +32,8 @@ router.get('/courses', listProfessorCourses);
 router.get('/courses/:courseId', professorCourseAccessValidation, validateRequest, getProfessorCourseDetails);
 router.post('/courses/:courseId/materials', uploadMaterial, uploadMaterialValidation, validateRequest, addMaterial);
 router.delete('/courses/:courseId/materials/:materialId', deleteMaterialValidation, validateRequest, deleteMaterial);
+router.get('/courses/:courseId/student-assignments', getStudentAssignmentsValidation, validateRequest, getStudentAssignments);
+router.get('/courses/:courseId/assignments/:assignmentId/download', downloadAssignmentValidation, validateRequest, downloadAssignment);
 
 router.post('/courses/:courseId/supplement-request', requestSupplementValidation, validateRequest, requestProfessorSupplement);
 

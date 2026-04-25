@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { api } from '../lib/api';
+import { api, getUploadUrl } from '../lib/api';
 import { useAuth } from '../lib/auth';
+import { useConfirm } from '../lib/confirmModal';
 import { useToast } from '../lib/toast';
 
 export default function StudentCoursePage() {
   const { courseId } = useParams();
   const { token, user } = useAuth();
+  const { showConfirm } = useConfirm();
   const { showToast } = useToast();
 
   const [courseData, setCourseData] = useState(null);
@@ -79,6 +81,12 @@ export default function StudentCoursePage() {
       });
       return;
     }
+
+    const confirmed = await showConfirm('Inregistrezi acest consum de token-uri?', 'Consum token-uri');
+    if (!confirmed) {
+      return;
+    }
+
     setSubmittingConsumption(true);
     try {
       const resp = await api(`/student/courses/${courseId}/consume`, {
@@ -109,6 +117,12 @@ export default function StudentCoursePage() {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    const confirmed = await showConfirm('Incarci aceasta tema pentru curs?', 'Incarcare tema');
+    if (!confirmed) {
+      e.target.value = '';
+      return;
+    }
+
     const form = new FormData();
     form.append('file', file);
 
@@ -126,7 +140,30 @@ export default function StudentCoursePage() {
     }
   }
 
+  async function deleteAssignment(assignmentId) {
+    const confirmed = await showConfirm('Esti sigur ca vrei sa stergi aceasta tema?', 'Stergere tema');
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      const resp = await api(`/student/courses/${courseId}/assignments/${assignmentId}`, {
+        method: 'DELETE',
+        token
+      });
+      setMsg(resp.message);
+      await load();
+    } catch (e2) {
+      setErr(e2.message);
+    }
+  }
+
   async function validateVps() {
+    const confirmed = await showConfirm('Pornesti validarea VPS prin httpbin?', 'Validare VPS');
+    if (!confirmed) {
+      return;
+    }
+
     try {
       const resp = await api(`/student/courses/${courseId}/vps/validate`, {
         method: 'POST',
@@ -144,6 +181,12 @@ export default function StudentCoursePage() {
   async function requestExtra() {
     setErr('');
     setMsg('');
+
+    const confirmed = await showConfirm('Trimiti aceasta solicitare de resurse suplimentare?', 'Cerere resurse suplimentare');
+    if (!confirmed) {
+      return;
+    }
+
     setSubmittingExtra(true);
     try {
       const resp = await api(`/student/courses/${courseId}/extra-resources`, {
@@ -167,7 +210,13 @@ export default function StudentCoursePage() {
   if (!courseData) return <div>Loading course...</div>;
 
   return (
-    <div className="space-y-6">
+    <div className="relative space-y-6">
+      {!isAdmin && (
+        <div className="fixed right-4 top-20 z-10 rounded-xl border border-moss/25 bg-white/95 px-4 py-2 text-sm shadow-sm backdrop-blur">
+          <p className="font-semibold text-ink">Tokenuri ramase</p>
+          <p className="text-moss">{courseData.resources.remainingTokens}</p>
+        </div>
+      )}
       <h2 className="font-heading text-3xl font-bold">{courseData.course.title}</h2>
       <p>{courseData.course.description}</p>
       {isAdmin && (
@@ -209,7 +258,7 @@ export default function StudentCoursePage() {
         <ul className="mt-3 list-disc pl-6">
           {courseData.materials.map((m) => (
             <li key={m.id}>
-              <a className="text-moss underline" href={`http://localhost:4000/uploads/${m.file_path}`} target="_blank" rel="noreferrer">
+              <a className="text-moss underline" href={getUploadUrl(m.file_path)} target="_blank" rel="noreferrer">
                 {m.file_name}
               </a>
             </li>
@@ -221,11 +270,21 @@ export default function StudentCoursePage() {
         <section className="card">
         <h3 className="font-heading text-lg font-semibold">Incarcare teme</h3>
         <input className="mt-2" type="file" onChange={uploadAssignment} />
-        <ul className="mt-3 list-disc pl-6">
+        <div className="mt-3 space-y-2">
           {courseData.assignments.map((a) => (
-            <li key={a.id}>{a.file_name}</li>
+            <div key={a.id} className="flex items-center justify-between rounded-lg border border-moss/20 p-2">
+              <a className="text-moss underline" href={getUploadUrl(a.file_path)} target="_blank" rel="noreferrer">
+                {a.file_name}
+              </a>
+              <button
+                className="btn-secondary text-xs text-red-600 hover:bg-red-100"
+                onClick={() => deleteAssignment(a.id)}
+              >
+                Sterge
+              </button>
+            </div>
           ))}
-        </ul>
+        </div>
         </section>
       )}
 

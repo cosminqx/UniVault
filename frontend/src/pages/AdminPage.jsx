@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { api } from '../lib/api';
 import { useAuth } from '../lib/auth';
+import { useConfirm } from '../lib/confirmModal';
 import { useToast } from '../lib/toast';
 
 function Field({ label, hint, children }) {
@@ -15,6 +16,7 @@ function Field({ label, hint, children }) {
 
 export default function AdminPage() {
   const { token } = useAuth();
+  const { showConfirm } = useConfirm();
   const { showToast } = useToast();
   const [users, setUsers] = useState([]);
   const [activities, setActivities] = useState([]);
@@ -82,6 +84,20 @@ export default function AdminPage() {
 
     if (!action) return;
 
+    const confirmMessages = {
+      revoke: 'Revoci acest utilizator la rolul de student?',
+      revoke_deactivate: 'Revoci acest utilizator la rolul de student si il dezactivezi?',
+      'role:administrator': 'Setezi rolul de administrator pentru acest utilizator?',
+      'role:profesor': 'Setezi rolul de profesor pentru acest utilizator?',
+      'role:student': 'Setezi rolul de student pentru acest utilizator?',
+      'role:audit': 'Setezi rolul de audit pentru acest utilizator?'
+    };
+
+    const confirmed = await showConfirm(confirmMessages[action] || 'Confirmi aceasta actiune asupra utilizatorului?', 'Confirmare actiune');
+    if (!confirmed) {
+      return;
+    }
+
     if (action.startsWith('role:')) {
       await setRole(userId, action.replace('role:', ''));
     } else if (action === 'revoke') {
@@ -94,6 +110,11 @@ export default function AdminPage() {
   }
 
   async function createActivity() {
+    const confirmed = await showConfirm('Adaugi aceasta activitate noua in platforma?', 'Adaugare activitate');
+    if (!confirmed) {
+      return;
+    }
+
     try {
       const resp = await api('/admin/activities', {
         method: 'POST',
@@ -122,6 +143,11 @@ export default function AdminPage() {
   }
 
   async function deleteActivity(id) {
+    const confirmed = await showConfirm('Stergi aceasta activitate definitiv?', 'Stergere activitate');
+    if (!confirmed) {
+      return;
+    }
+
     try {
       const resp = await api(`/admin/activities/${id}`, { method: 'DELETE', token });
       setMsg(resp.message);
@@ -132,6 +158,11 @@ export default function AdminPage() {
   }
 
   async function saveTotals() {
+    const confirmed = await showConfirm('Salvezi noile totale ale resurselor universitatii?', 'Salvare totale resurse');
+    if (!confirmed) {
+      return;
+    }
+
     try {
       const resp = await api('/admin/resources/totals', {
         method: 'PUT',
@@ -148,6 +179,11 @@ export default function AdminPage() {
   }
 
   async function confirmDistribution() {
+    const confirmed = await showConfirm('Confirmi distributia recomandata pentru cursuri?', 'Confirmare distributie');
+    if (!confirmed) {
+      return;
+    }
+
     try {
       const payload = distribution.map((d) => ({
         courseId: d.courseId,
@@ -163,6 +199,13 @@ export default function AdminPage() {
   }
 
   async function resolveProfessorSupplement(requestId, approve) {
+    const message = approve ? 'Aprobi suplimentul de resurse pentru profesor?' : 'Respingi suplimentul de resurse pentru profesor?';
+    const title = approve ? 'Aproba supliment' : 'Respinge supliment';
+    const confirmed = await showConfirm(message, title);
+    if (!confirmed) {
+      return;
+    }
+
     try {
       const resp = await api(`/admin/supplements/professors/${requestId}/resolve`, {
         method: 'POST',
@@ -177,6 +220,13 @@ export default function AdminPage() {
   }
 
   async function resolveAdminRequest(requestId, approve) {
+    const message = approve ? 'Aprobi cererea studentului escaladata la administrator?' : 'Respingi cererea studentului escaladata la administrator?';
+    const title = approve ? 'Aproba cerere' : 'Respinge cerere';
+    const confirmed = await showConfirm(message, title);
+    if (!confirmed) {
+      return;
+    }
+
     try {
       const resp = await api(`/admin/requests/${requestId}/resolve`, {
         method: 'POST',
@@ -202,6 +252,11 @@ export default function AdminPage() {
         message: validationMessage,
         type: 'error'
       });
+      return;
+    }
+
+    const confirmed = await showConfirm('Trimiti credentialele VPS catre studentii inscrisi la acest curs?', 'Trimitere credentiale VPS');
+    if (!confirmed) {
       return;
     }
 

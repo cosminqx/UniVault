@@ -6,6 +6,8 @@ import {
   consumeTokens,
   consumeTokensValidation,
   courseAccessValidation,
+  deleteAssignment,
+  deleteAssignmentValidation,
   enrollCourse,
   enrollValidation,
   getAllCourses,
@@ -29,6 +31,7 @@ router.post('/courses/:courseId/enroll', requireRole('student'), enrollValidatio
 router.get('/courses/:courseId', requireRole('student', 'administrator'), courseAccessValidation, validateRequest, getCourseDetails);
 
 router.post('/courses/:courseId/assignments', requireRole('student'), uploadAssignment, uploadAssignmentValidation, validateRequest, addAssignment);
+router.delete('/courses/:courseId/assignments/:assignmentId', requireRole('student'), deleteAssignmentValidation, validateRequest, deleteAssignment);
 
 router.get('/activities', requireRole('student'), listActivities);
 router.post('/courses/:courseId/consume', requireRole('student'), consumeTokensValidation, validateRequest, consumeTokens);

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../lib/api';
 import { useAuth } from '../lib/auth';
+import { useConfirm } from '../lib/confirmModal';
 import { useToast } from '../lib/toast';
 
 function Field({ label, hint, children }) {
@@ -16,6 +17,7 @@ function Field({ label, hint, children }) {
 
 export default function ProfessorPage() {
   const { token } = useAuth();
+  const { showConfirm } = useConfirm();
   const { showToast } = useToast();
   const [courses, setCourses] = useState([]);
   const [requests, setRequests] = useState([]);
@@ -23,6 +25,7 @@ export default function ProfessorPage() {
   const [err, setErr] = useState('');
   const [busyAction, setBusyAction] = useState('');
   const [fieldErrors, setFieldErrors] = useState({});
+  const [courseAssignments, setCourseAssignments] = useState({});
   const [newCourse, setNewCourse] = useState({
     title: '',
     description: '',
@@ -39,6 +42,19 @@ export default function ProfessorPage() {
       ]);
       setCourses(courseResp.courses);
       setRequests(reqResp.requests);
+
+      // Fetch student assignments for each course
+      const assignmentsMap = {};
+      for (const course of courseResp.courses) {
+        try {
+          const assignResp = await api(`/professor/courses/${course.id}/student-assignments`, { token });
+          assignmentsMap[course.id] = assignResp.assignments || [];
+        } catch (e) {
+          console.error(`Failed to fetch assignments for course ${course.id}:`, e);
+          assignmentsMap[course.id] = [];
+        }
+      }
+      setCourseAssignments(assignmentsMap);
     } catch (e) {
       setErr(e.message);
     }
@@ -96,6 +112,11 @@ export default function ProfessorPage() {
       return;
     }
 
+    const confirmed = await showConfirm('Creezi acest curs acum? Verifica inca o data titlul, descrierea si resursele.', 'Creare curs');
+    if (!confirmed) {
+      return;
+    }
+
     setFieldErrors({});
     setBusyAction('create-course');
 
@@ -149,6 +170,12 @@ export default function ProfessorPage() {
   async function uploadMaterial(courseId, file) {
     setMsg('');
     setErr('');
+
+    const confirmed = await showConfirm('Vrei sa incarci acest material pentru studenti?', 'Incarcare material');
+    if (!confirmed) {
+      return;
+    }
+
     setBusyAction(`upload-${courseId}`);
     const form = new FormData();
     form.append('file', file);
@@ -180,6 +207,14 @@ export default function ProfessorPage() {
   async function resolveRequest(id, approve) {
     setMsg('');
     setErr('');
+
+    const message = approve ? 'Aprobi aceasta cerere de resurse?' : 'Respingi aceasta cerere de resurse?';
+    const title = approve ? 'Aproba cerere' : 'Respinge cerere';
+    const confirmed = await showConfirm(message, title);
+    if (!confirmed) {
+      return;
+    }
+
     setBusyAction(`request-${id}`);
     try {
       const resp = await api(`/professor/requests/${id}/resolve`, {
@@ -210,6 +245,12 @@ export default function ProfessorPage() {
   async function requestSupplement(courseId) {
     setMsg('');
     setErr('');
+
+    const confirmed = await showConfirm('Trimiti o solicitare de supliment de resurse catre administrator?', 'Supliment resurse');
+    if (!confirmed) {
+      return;
+    }
+
     setBusyAction(`supplement-${courseId}`);
     try {
       const resp = await api(`/professor/courses/${courseId}/supplement-request`, { method: 'POST', token, body: {} });
@@ -223,6 +264,46 @@ export default function ProfessorPage() {
       setErr(e.message);
       showToast({
         title: 'Solicitarea nu a fost trimisa',
+        message: e.message,
+        type: 'error'
+      });
+    } finally {
+      setBusyAction('');
+    }
+  }
+
+  async function downloadAssignment(courseId, assignmentId, fileName) {
+    setBusyAction(`download-${assignmentId}`);
+    try {
+      const response = await fetch(`/api/professor/courses/${courseId}/assignments/${assignmentId}/download`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Nu am putut descarca fisierul');
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      showToast({
+        title: 'Fisierul descarcat',
+        message: 'Tema a fost descarcata cu succes.'
+      });
+    } catch (e) {
+      setErr(e.message);
+      showToast({
+        title: 'Nu am putut descarca fisierul',
         message: e.message,
         type: 'error'
       });
@@ -414,6 +495,46 @@ export default function ProfessorPage() {
                         <p className="mt-1 text-xs text-ink/65">
                           Adaugat la {new Date(material.uploaded_at).toLocaleString()}
                         </p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="mt-4 rounded-xl border border-moss/15 bg-white/70 p-3">
+                <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                  <h5 className="font-semibold">Tema adaugata de studenti</h5>
+                  <span className="text-xs text-ink/60">
+                    {(courseAssignments[course.id] || []).length} fisiere
+                  </span>
+                </div>
+
+                {(!courseAssignments[course.id] || courseAssignments[course.id].length === 0) && (
+                  <p className="mt-2 text-sm text-ink/70">
+                    Studentii nu au incarcat tema inca pentru acest curs.
+                  </p>
+                )}
+
+                {courseAssignments[course.id]?.length > 0 && (
+                  <div className="mt-3 space-y-2">
+                    {courseAssignments[course.id].map((assignment) => (
+                      <div key={assignment.id} className="rounded-xl border border-moss/10 bg-canvas/60 p-3 text-sm">
+                        <p className="font-medium break-all">{assignment.file_name}</p>
+                        <p className="text-xs text-ink/70">
+                          Incarcata de <span className="font-semibold">{assignment.student_name}</span> ({assignment.student_email})
+                        </p>
+                        <p className="mt-1 text-xs text-ink/65">
+                          {new Date(assignment.uploaded_at).toLocaleString()}
+                        </p>
+                        <div className="mt-2 flex gap-2">
+                          <button
+                            className="btn-secondary text-xs"
+                            onClick={() => downloadAssignment(course.id, assignment.id, assignment.file_name)}
+                            disabled={busyAction === `download-${assignment.id}`}
+                          >
+                            {busyAction === `download-${assignment.id}` ? 'Se descarca...' : 'Descarca'}
+                          </button>
+                        </div>
                       </div>
                     ))}
                   </div>

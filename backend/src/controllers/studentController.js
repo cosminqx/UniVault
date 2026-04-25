@@ -348,3 +348,53 @@ export async function myExtraRequests(req, res) {
   );
   return res.json({ requests: rows });
 }
+
+export const deleteAssignmentValidation = [
+  param('courseId').isInt({ min: 1 }),
+  param('assignmentId').isInt({ min: 1 })
+];
+
+export async function deleteAssignment(req, res) {
+  const courseId = Number(req.params.courseId);
+  const assignmentId = Number(req.params.assignmentId);
+  const studentId = req.user.id;
+
+  await ensureStudentEnrolled(courseId, studentId);
+
+  const { rows: assignmentRows } = await query(
+    'SELECT id, file_path FROM assignments WHERE id = $1 AND course_id = $2 AND student_id = $3',
+    [assignmentId, courseId, studentId]
+  );
+
+  if (!assignmentRows.length) {
+    return res.status(404).json({ message: 'Assignment not found.' });
+  }
+
+  const assignment = assignmentRows[0];
+
+  await query('DELETE FROM assignments WHERE id = $1', [assignmentId]);
+
+  // Delete file from filesystem
+  try {
+    const fs = await import('fs');
+    const path = await import('path');
+    const { fileURLToPath } = await import('url');
+    const __filename = fileURLToPath(import.meta.url);
+    const __dirname = path.dirname(__filename);
+    const fullPath = path.resolve(__dirname, `../uploads/${assignment.file_path}`);
+    if (fs.existsSync(fullPath)) {
+      fs.unlinkSync(fullPath);
+    }
+  } catch (e) {
+    console.error('Error deleting file:', e);
+  }
+
+  await logAction({
+    user: req.user,
+    actionType: 'assignment_deleted_student',
+    actionDetails: `Student deleted assignment ${assignmentId} from course ${courseId}`,
+    ipAddress: req.ip
+  });
+
+  return res.json({ message: 'Assignment deleted.' });
+}
