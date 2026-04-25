@@ -68,6 +68,12 @@ createdb univault
 
 3. Actualizează `DATABASE_URL` în `backend/.env`.
 
+Pentru Supabase Postgres, folosește formatul:
+
+```bash
+DATABASE_URL=postgresql://postgres:[YOUR_DB_PASSWORD]@db.uodfqtidehbuchmchxoy.supabase.co:5432/postgres?sslmode=require
+```
+
 ## Instalare dependențe
 
 ```bash
@@ -147,6 +153,8 @@ Backend (`backend/.env`):
 
 Frontend (`frontend/.env`):
 - VITE_API_URL
+- VITE_SUPABASE_URL
+- VITE_SUPABASE_PUBLISHABLE_KEY
 
 ## Note
 
