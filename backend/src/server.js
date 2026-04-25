@@ -16,16 +16,19 @@ const app = express();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const allowedOrigins = new Set([env.frontendUrl]);
-try {
-  const frontend = new URL(env.frontendUrl);
-  if (frontend.hostname === 'localhost') {
-    allowedOrigins.add(`${frontend.protocol}//127.0.0.1:${frontend.port}`);
-  } else if (frontend.hostname === '127.0.0.1') {
-    allowedOrigins.add(`${frontend.protocol}//localhost:${frontend.port}`);
+const allowedOrigins = new Set([env.frontendUrl, ...env.frontendUrls]);
+
+for (const origin of [...allowedOrigins]) {
+  try {
+    const frontend = new URL(origin);
+    if (frontend.hostname === 'localhost') {
+      allowedOrigins.add(`${frontend.protocol}//127.0.0.1:${frontend.port}`);
+    } else if (frontend.hostname === '127.0.0.1') {
+      allowedOrigins.add(`${frontend.protocol}//localhost:${frontend.port}`);
+    }
+  } catch {
+    // Keep strict behavior for values that are not valid URLs.
   }
-} catch {
-  // Keep strict env.frontendUrl-only behavior if URL parsing fails.
 }
 
 app.use(
