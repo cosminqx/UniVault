@@ -1,0 +1,9 @@
+node_modules/
+.env
+.env.*
+!.env.example
+backend/src/uploads/materials/*
+backend/src/uploads/assignments/*
+backend/src/uploads/materials/.gitkeep
+backend/src/uploads/assignments/.gitkeep
+dist/

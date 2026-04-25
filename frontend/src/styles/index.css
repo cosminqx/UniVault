@@ -1,0 +1,45 @@
+@import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700&family=Space+Grotesk:wght@400;500;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color: #142014;
+  background: radial-gradient(circle at 10% 10%, #dce8ce 0%, #f7f8f4 42%, #f2e0cf 100%);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: 'Space Grotesk', sans-serif;
+  color: #142014;
+}
+
+.card {
+  @apply bg-white/90 rounded-2xl shadow-lg p-5 border border-moss/20;
+}
+
+.input {
+  @apply w-full rounded-xl border border-moss/25 bg-white px-3 py-2 focus:outline-none focus:ring-2 focus:ring-moss/60;
+}
+
+.btn {
+  @apply rounded-xl px-4 py-2 font-medium transition hover:translate-y-[-1px];
+}
+
+.btn-primary {
+  @apply btn bg-moss text-white hover:bg-moss/90;
+}
+
+.btn-secondary {
+  @apply btn bg-ember text-white hover:bg-ember/90;
+}
+
+.btn-outline {
+  @apply btn border border-moss text-moss hover:bg-moss/10;
+}
