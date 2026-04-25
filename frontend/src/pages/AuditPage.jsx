@@ -70,7 +70,7 @@ export default function AuditPage() {
 
       <section className="card">
         <h3 className="font-heading text-xl font-semibold">Filtre</h3>
-        <div className="mt-2 grid gap-2 md:grid-cols-5">
+        <div className="mt-2 grid gap-2 md:grid-cols-2 xl:grid-cols-5">
           <input className="input" type="date" value={filters.from} onChange={(e) => setFilters({ ...filters, from: e.target.value })} />
           <input className="input" type="date" value={filters.to} onChange={(e) => setFilters({ ...filters, to: e.target.value })} />
           <select className="input" value={filters.role} onChange={(e) => setFilters({ ...filters, role: e.target.value })}>
@@ -94,7 +94,26 @@ export default function AuditPage() {
         </div>
       </section>
 
-      <section className="card overflow-auto">
+      <section className="card">
+        <div className="space-y-3 lg:hidden">
+          {logs.map((log) => (
+            <div key={log.id} className="rounded-2xl border border-moss/20 bg-white/80 p-4 text-sm">
+              <div className="flex flex-col gap-2">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="font-semibold">{log.action_type}</p>
+                    <p className="text-xs text-ink/65">{new Date(log.timestamp).toLocaleString()}</p>
+                  </div>
+                  <span className="rounded-full bg-moss/10 px-3 py-1 text-xs text-moss">{log.user_role}</span>
+                </div>
+                <p><span className="font-medium">User:</span> {log.user_email}</p>
+                <p><span className="font-medium">Detalii:</span> {log.action_details}</p>
+                <p><span className="font-medium">IP:</span> {log.ip_address}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+        <div className="hidden overflow-auto lg:block">
         <table className="min-w-full text-sm">
           <thead>
             <tr className="border-b border-moss/20 text-left">
@@ -119,7 +138,8 @@ export default function AuditPage() {
             ))}
           </tbody>
         </table>
-        <div className="mt-3 flex items-center gap-2">
+        </div>
+        <div className="mt-3 flex flex-wrap items-center gap-2">
           <button className="btn-outline" onClick={() => load(Math.max(1, page - 1))} disabled={page <= 1}>Anterior</button>
           <span>Pagina {page}</span>
           <button

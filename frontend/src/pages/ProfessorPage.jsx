@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { api } from '../lib/api';
 import { useAuth } from '../lib/auth';
+import { useToast } from '../lib/toast';
 
 function Field({ label, hint, children }) {
   return (
@@ -14,6 +15,7 @@ function Field({ label, hint, children }) {
 
 export default function ProfessorPage() {
   const { token } = useAuth();
+  const { showToast } = useToast();
   const [courses, setCourses] = useState([]);
   const [requests, setRequests] = useState([]);
   const [msg, setMsg] = useState('');
@@ -110,6 +112,10 @@ export default function ProfessorPage() {
         }
       });
       setMsg(resp.message);
+      showToast({
+        title: 'Curs creat',
+        message: 'Cursul a fost salvat cu succes si este acum disponibil in lista ta.'
+      });
       setNewCourse({
         title: '',
         description: '',
@@ -129,6 +135,11 @@ export default function ProfessorPage() {
       } else {
         setErr(e.message);
       }
+      showToast({
+        title: 'Nu am putut crea cursul',
+        message: Array.isArray(e.payload?.errors) ? 'Verifica datele introduse in formular.' : e.message,
+        type: 'error'
+      });
     } finally {
       setBusyAction('');
     }
@@ -148,9 +159,18 @@ export default function ProfessorPage() {
         body: form
       });
       setMsg(`Material incarcat cu succes. Studentii pot vedea acum fisierul in curs.`);
+      showToast({
+        title: 'Material incarcat',
+        message: `Fisierul a fost atasat cursului si este disponibil pentru studenti.`
+      });
       await load();
     } catch (e) {
       setErr(e.message);
+      showToast({
+        title: 'Upload esuat',
+        message: e.message,
+        type: 'error'
+      });
     } finally {
       setBusyAction('');
     }
@@ -167,9 +187,20 @@ export default function ProfessorPage() {
         body: { approve }
       });
       setMsg(resp.message);
+      showToast({
+        title: approve ? 'Cerere aprobata' : 'Cerere respinsa',
+        message: approve
+          ? 'Studentul va vedea actualizarea statusului in pagina cursului.'
+          : 'Cererea a fost marcata ca respinsa.'
+      });
       await load();
     } catch (e) {
       setErr(e.message);
+      showToast({
+        title: 'Nu am putut procesa cererea',
+        message: e.message,
+        type: 'error'
+      });
     } finally {
       setBusyAction('');
     }
@@ -182,9 +213,18 @@ export default function ProfessorPage() {
     try {
       const resp = await api(`/professor/courses/${courseId}/supplement-request`, { method: 'POST', token, body: {} });
       setMsg('Solicitarea de supliment a fost trimisa catre administrator.');
+      showToast({
+        title: 'Solicitare trimisa',
+        message: 'Administratorul a primit cererea ta de supliment de resurse.'
+      });
       await load();
     } catch (e) {
       setErr(e.message);
+      showToast({
+        title: 'Solicitarea nu a fost trimisa',
+        message: e.message,
+        type: 'error'
+      });
     } finally {
       setBusyAction('');
     }
@@ -297,7 +337,7 @@ export default function ProfessorPage() {
             </div>
           </div>
 
-          <button className="btn-primary md:col-span-2" onClick={createCourse} disabled={busyAction === 'create-course'}>
+          <button className="btn-primary w-full md:col-span-2" onClick={createCourse} disabled={busyAction === 'create-course'}>
             {busyAction === 'create-course' ? 'Se creeaza cursul...' : 'Creeaza curs'}
           </button>
         </div>
@@ -321,8 +361,8 @@ export default function ProfessorPage() {
               <p className="text-sm">Resurse alocate cursului: {course.allocated_tokens} tokens, {course.allocated_vps} VPS</p>
               <p className="text-sm">Status distributie resurse de la administrator: {course.distribution_confirmed ? 'Confirmata' : 'Neconfirmata'}</p>
 
-              <div className="mt-2 flex flex-wrap gap-2">
-                <label className="btn-outline cursor-pointer">
+              <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+                <label className="btn-outline cursor-pointer text-center">
                   {busyAction === `upload-${course.id}` ? 'Se incarca materialul...' : 'Incarca material pentru studenti'}
                   <input
                     className="hidden"

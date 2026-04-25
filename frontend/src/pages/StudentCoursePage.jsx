@@ -155,7 +155,7 @@ export default function StudentCoursePage() {
       {msg && <p className="rounded-lg bg-green-100 p-2 text-green-700">{msg}</p>}
       {err && <p className="rounded-lg bg-red-100 p-2 text-red-700">{err}</p>}
 
-      <section className="card grid gap-4 md:grid-cols-2">
+      <section className="card grid gap-4 xl:grid-cols-2">
         <div>
           <h3 className="font-heading text-lg font-semibold">Resursele tale</h3>
           <ul className="mt-2 text-sm">
@@ -172,7 +172,7 @@ export default function StudentCoursePage() {
             <input className="input" placeholder="IP" value={vps.ip} onChange={(e) => setVps({ ...vps, ip: e.target.value })} />
             <input className="input" placeholder="Username" value={vps.username} onChange={(e) => setVps({ ...vps, username: e.target.value })} />
             <input className="input" placeholder="Password" value={vps.password} onChange={(e) => setVps({ ...vps, password: e.target.value })} />
-            <button className="btn-primary" onClick={validateVps}>Valideaza prin httpbin</button>
+            <button className="btn-primary w-full sm:w-auto" onClick={validateVps}>Valideaza prin httpbin</button>
           </div>
         </div>
       </section>
@@ -204,19 +204,19 @@ export default function StudentCoursePage() {
         <h3 className="font-heading text-lg font-semibold">Consum manual token-uri</h3>
         <div className="mt-2 space-y-2">
           {activities.map((activity) => (
-            <div key={activity.id} className="flex items-center gap-3">
-              <span className="min-w-72 text-sm">{activity.name} ({activity.token_cost} tokens)</span>
+            <div key={activity.id} className="grid gap-2 rounded-xl border border-moss/15 p-3 sm:grid-cols-[minmax(0,1fr)_120px] sm:items-center">
+              <span className="text-sm">{activity.name} ({activity.token_cost} tokens)</span>
               <input
                 type="number"
                 min={0}
-                className="input max-w-28"
+                className="input w-full"
                 placeholder="Repetari"
                 value={consumeValues[activity.id] || ''}
                 onChange={(e) => updateConsume(activity.id, e.target.value)}
               />
             </div>
           ))}
-          <button className="btn-secondary" onClick={submitConsumption} disabled={submittingConsumption || !consumeItems.length}>
+          <button className="btn-secondary w-full sm:w-auto" onClick={submitConsumption} disabled={submittingConsumption || !consumeItems.length}>
             {submittingConsumption ? 'Se inregistreaza consumul...' : 'Inregistreaza consum'}
           </button>
           {consumeItems.length > 0 && (
@@ -257,7 +257,7 @@ export default function StudentCoursePage() {
             </div>
           )}
           <button
-            className="btn-primary md:col-span-3"
+            className="btn-primary w-full md:col-span-3"
             onClick={requestExtra}
             disabled={Boolean(pendingRequestForType) || submittingExtra}
           >

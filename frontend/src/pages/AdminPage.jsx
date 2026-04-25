@@ -469,7 +469,7 @@ export default function AdminPage() {
           >
             <input className="input" placeholder="Ex: Lab2026!" value={vpsForm.password} onChange={(e) => setVpsForm({ ...vpsForm, password: e.target.value })} />
           </Field>
-          <button className="btn-primary md:col-span-4" onClick={sendVpsCreds}>Trimite credențiale</button>
+          <button className="btn-primary w-full md:col-span-4" onClick={sendVpsCreds}>Trimite credențiale</button>
         </div>
       </section>
     </div>

@@ -82,14 +82,19 @@ export default function StatsPage() {
           ))}
         </select>
         {studentStats && (
-          <div className="mt-3 text-sm">
-            <p>Token-uri alocate: {studentStats.allocatedTokens}</p>
-            <p>Token-uri totale consumate: {studentStats.totalTokensConsumed}</p>
-            <p>Abonamente alocate: {studentStats.allocatedVps}</p>
-            <p>Abonamente utilizate: {studentStats.usedVps}</p>
-            <div className="mt-2">
+          <div className="mt-3 space-y-3 text-sm">
+            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+              <div className="rounded-xl bg-canvas/60 p-3">Token-uri alocate: <span className="font-semibold">{studentStats.allocatedTokens}</span></div>
+              <div className="rounded-xl bg-canvas/60 p-3">Token-uri consumate: <span className="font-semibold">{studentStats.totalTokensConsumed}</span></div>
+              <div className="rounded-xl bg-canvas/60 p-3">Abonamente alocate: <span className="font-semibold">{studentStats.allocatedVps}</span></div>
+              <div className="rounded-xl bg-canvas/60 p-3">Abonamente utilizate: <span className="font-semibold">{studentStats.usedVps}</span></div>
+            </div>
+            <div className="space-y-2">
               {studentStats.activityConsumption.map((a) => (
-                <p key={a.activity}>{a.activity}: repetari {a.repetitions}, consum {a.tokens_consumed}</p>
+                <div key={a.activity} className="rounded-xl border border-moss/15 p-3">
+                  <p className="font-medium">{a.activity}</p>
+                  <p className="mt-1 text-ink/75">Repetari {a.repetitions}, consum {a.tokens_consumed}</p>
+                </div>
               ))}
             </div>
           </div>
@@ -104,13 +109,18 @@ export default function StatsPage() {
           ))}
         </select>
         {courseStats && (
-          <div className="mt-3 text-sm">
-            <p>Total token-uri alocate cursului: {courseStats.allocatedTokens}</p>
-            <p>Token-uri totale consumate: {courseStats.totalTokensConsumed}</p>
-            <p>Abonamente alocate/utilizate: {courseStats.allocatedVps} / {courseStats.usedVps}</p>
-            <div className="mt-2">
+          <div className="mt-3 space-y-3 text-sm">
+            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+              <div className="rounded-xl bg-canvas/60 p-3">Token-uri alocate: <span className="font-semibold">{courseStats.allocatedTokens}</span></div>
+              <div className="rounded-xl bg-canvas/60 p-3">Token-uri consumate: <span className="font-semibold">{courseStats.totalTokensConsumed}</span></div>
+              <div className="rounded-xl bg-canvas/60 p-3">Abonamente VPS: <span className="font-semibold">{courseStats.allocatedVps} / {courseStats.usedVps}</span></div>
+            </div>
+            <div className="space-y-2">
               {courseStats.activityConsumption.map((a) => (
-                <p key={a.activity}>{a.activity}: repetari {a.repetitions}, consum {a.tokens_consumed}</p>
+                <div key={a.activity} className="rounded-xl border border-moss/15 p-3">
+                  <p className="font-medium">{a.activity}</p>
+                  <p className="mt-1 text-ink/75">Repetari {a.repetitions}, consum {a.tokens_consumed}</p>
+                </div>
               ))}
             </div>
           </div>
@@ -121,9 +131,11 @@ export default function StatsPage() {
         <h3 className="font-heading text-xl font-semibold">Nivel universitate</h3>
         {universityStats && (
           <div className="space-y-2 text-sm">
-            <p>Total token-uri alocate universitate: {universityStats.totalUniversityTokens}</p>
-            <p>Total token-uri consumate: {universityStats.totalTokensConsumed}</p>
-            <p>Total abonamente alocate/utilizate: {universityStats.allocatedVps} / {universityStats.usedVps}</p>
+            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+              <div className="rounded-xl bg-canvas/60 p-3">Token-uri alocate: <span className="font-semibold">{universityStats.totalUniversityTokens}</span></div>
+              <div className="rounded-xl bg-canvas/60 p-3">Token-uri consumate: <span className="font-semibold">{universityStats.totalTokensConsumed}</span></div>
+              <div className="rounded-xl bg-canvas/60 p-3">Abonamente VPS: <span className="font-semibold">{universityStats.allocatedVps} / {universityStats.usedVps}</span></div>
+            </div>
             <p className="font-semibold">Grafic consum per activitate</p>
             <div className="space-y-2">
               {universityStats.activityChart.map((a) => (
@@ -142,13 +154,17 @@ export default function StatsPage() {
               ))}
             </div>
             <p className="font-semibold">Top cursuri dupa consum</p>
-            {universityStats.topCourses.map((c) => (
-              <p key={c.id}>{c.title}: {c.consumed}</p>
-            ))}
+            <div className="grid gap-2 lg:grid-cols-2">
+              {universityStats.topCourses.map((c) => (
+                <div key={c.id} className="rounded-xl border border-moss/15 p-3">{c.title}: {c.consumed}</div>
+              ))}
+            </div>
             <p className="font-semibold">Top studenti dupa consum</p>
-            {universityStats.topStudents.map((s) => (
-              <p key={s.id}>{s.name} ({s.email}): {s.consumed}</p>
-            ))}
+            <div className="grid gap-2 lg:grid-cols-2">
+              {universityStats.topStudents.map((s) => (
+                <div key={s.id} className="rounded-xl border border-moss/15 p-3">{s.name} ({s.email}): {s.consumed}</div>
+              ))}
+            </div>
           </div>
         )}
       </section>

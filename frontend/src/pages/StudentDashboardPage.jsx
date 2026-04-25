@@ -201,7 +201,56 @@ export default function StudentDashboardPage() {
           </div>
         )}
 
-        <div className="mt-3 overflow-auto">
+        <div className="mt-4 grid gap-3 lg:hidden">
+          {data.allCourses.map((course) => (
+            <div key={course.id} className="rounded-2xl border border-moss/20 bg-white/80 p-4">
+              <div className="flex flex-col gap-3">
+                <div>
+                  <h4 className="font-semibold">{course.title}</h4>
+                  <p className="mt-1 text-sm text-ink/70">{course.professor_name}</p>
+                  <p className="text-xs text-ink/60">{course.professor_email}</p>
+                </div>
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  <div className="rounded-xl bg-canvas/60 p-3">
+                    <p className="text-xs uppercase tracking-wide text-ink/60">Locuri</p>
+                    <p className="mt-1 font-semibold">{course.available_spots}</p>
+                  </div>
+                  <div className="rounded-xl bg-canvas/60 p-3">
+                    <p className="text-xs uppercase tracking-wide text-ink/60">Inscrisi</p>
+                    <p className="mt-1 font-semibold">{course.enrolled_count} / {course.max_students}</p>
+                  </div>
+                  <div className="rounded-xl bg-canvas/60 p-3">
+                    <p className="text-xs uppercase tracking-wide text-ink/60">Token-uri</p>
+                    <p className="mt-1 font-semibold">{course.tokens_per_student}</p>
+                  </div>
+                  <div className="rounded-xl bg-canvas/60 p-3">
+                    <p className="text-xs uppercase tracking-wide text-ink/60">VPS</p>
+                    <p className="mt-1 font-semibold">{course.vps_per_student}</p>
+                  </div>
+                </div>
+                <p className="text-sm text-ink/70">{course.materials_count} materiale disponibile</p>
+                <div className="flex flex-col gap-2 sm:flex-row">
+                  <button className="btn-outline" onClick={() => setSelectedCourseId(course.id)} type="button">
+                    Vezi detalii
+                  </button>
+                  {course.is_enrolled ? (
+                    <span className="rounded-xl bg-moss/10 px-3 py-2 text-sm text-moss">Deja inrolat</span>
+                  ) : (
+                    <button
+                      className="btn-primary"
+                      onClick={() => enroll(course.id)}
+                      disabled={Number(course.available_spots) <= 0}
+                    >
+                      Inrolare
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="mt-3 hidden overflow-auto lg:block">
           <table className="min-w-full text-sm">
             <thead>
               <tr className="border-b border-moss/20 text-left">
