@@ -1,7 +1,7 @@
 import { body } from 'express-validator';
 import { query } from '../config/db.js';
 import { env } from '../config/env.js';
-import { getMailer } from '../config/mailer.js';
+import { hasEmailProvider, sendEmail } from '../config/mailer.js';
 import { signAuthToken } from '../utils/jwt.js';
 import { comparePassword, generateTokenValue, hashPassword, hashToken } from '../utils/security.js';
 import { logAction } from '../utils/audit.js';
@@ -130,15 +130,18 @@ export async function forgotPassword(req, res) {
   );
 
   const resetUrl = `${env.frontendUrl}/reset-password?token=${rawToken}`;
-  const mailer = getMailer();
+  let sent = false;
 
-  if (mailer) {
-    await mailer.sendMail({
-      from: env.smtpFrom,
+  try {
+    sent = await sendEmail({
       to: user.email,
       subject: 'UniVault password reset',
-      text: `Reset your password using this link (valid 1 hour): ${resetUrl}`
+      text: `Reset your password using this link (valid 1 hour): ${resetUrl}`,
+      category: 'Password Reset'
     });
+  } catch (error) {
+    // Keep auth flow functional even when external email provider fails.
+    console.error('Email provider error (forgot password):', error.message);
   }
 
   await logAction({
@@ -150,7 +153,7 @@ export async function forgotPassword(req, res) {
 
   return res.json({
     message: 'If the email exists, a reset link was sent.',
-    developmentResetUrl: mailer ? undefined : resetUrl
+    developmentResetUrl: sent ? undefined : resetUrl
   });
 }
 

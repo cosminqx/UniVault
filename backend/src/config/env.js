@@ -15,7 +15,11 @@ export const env = {
   smtpSecure: process.env.SMTP_SECURE === 'true',
   smtpUser: process.env.SMTP_USER,
   smtpPass: process.env.SMTP_PASS,
-  smtpFrom: process.env.SMTP_FROM || 'noreply@univault.local'
+  smtpFrom: process.env.SMTP_FROM || 'noreply@univault.local',
+  mailtrapApiToken: process.env.MAILTRAP_API_TOKEN,
+  mailtrapApiUrl: process.env.MAILTRAP_API_URL || 'https://send.api.mailtrap.io/api/send',
+  mailtrapFromEmail: process.env.MAILTRAP_FROM_EMAIL,
+  mailtrapFromName: process.env.MAILTRAP_FROM_NAME || 'UniVault'
 };
 
 if (!env.databaseUrl) {

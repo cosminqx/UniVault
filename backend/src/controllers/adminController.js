@@ -1,8 +1,7 @@
 import { body, param, query as queryValidator } from 'express-validator';
 import { query } from '../config/db.js';
 import { logAction } from '../utils/audit.js';
-import { getMailer } from '../config/mailer.js';
-import { env } from '../config/env.js';
+import { sendEmail } from '../config/mailer.js';
 import { addResourceToStudent } from '../services/resourceService.js';
 
 export async function listUsers(req, res) {
@@ -403,18 +402,22 @@ export async function sendVpsCredentials(req, res) {
     [courseId]
   );
 
-  const mailer = getMailer();
   const sentTo = [];
 
-  if (mailer) {
-    for (const student of students) {
-      await mailer.sendMail({
-        from: env.smtpFrom,
+  for (const student of students) {
+    try {
+      const sent = await sendEmail({
         to: student.email,
         subject: `UniVault VPS credentials for course #${courseId}`,
-        text: `IP: ${ipAddress}\nUsername: ${username}\nPassword: ${password}`
+        text: `IP: ${ipAddress}\nUsername: ${username}\nPassword: ${password}`,
+        category: 'VPS Credentials'
       });
-      sentTo.push(student.email);
+
+      if (sent) {
+        sentTo.push(student.email);
+      }
+    } catch (error) {
+      console.error(`Email provider error (VPS credentials -> ${student.email}):`, error.message);
     }
   }
 
@@ -428,7 +431,7 @@ export async function sendVpsCredentials(req, res) {
   return res.json({
     message: 'VPS credentials processed.',
     recipients: students.map((s) => s.email),
-    emailSent: Boolean(mailer),
+    emailSent: sentTo.length > 0,
     emailSentTo: sentTo
   });
 }
